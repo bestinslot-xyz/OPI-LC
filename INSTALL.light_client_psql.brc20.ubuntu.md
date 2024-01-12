@@ -63,22 +63,15 @@ cd OPI-LC/brc20_light_client_psql
 wget https://opi-light-client-files.fra1.digitaloceanspaces.com/light_client_brc20_last.dump
 sudo -u postgres pg_restore -U postgres -Fc -d postgres < light_client_brc20_last.dump
 rm light_client_brc20_last.dump
-mv .env_psql .env
 ```
 
-2) Set DB_PASSWD in .env, replace `<password>` with your password. NOTE: if there is `/` in your password replace it with `\/`
+2) Run initialise_psql.py to initialise .env config
 
 ```sh
-sed -i 's/DB_PASSWD=""/DB_PASSWD="<password>"/g' .env
+python3 initialise_psql.py
 ```
 
-3) Set REPORT_NAME in .env, replace `<name>` with your node name. NOTE: if there is `/` in your name replace it with `\/`
-
-```sh
-sed -i 's/REPORT_NAME="opi_brc20_light_client"/REPORT_NAME="<name>"/g' .env
-```
-
-4) Run the indexer
+3) Run the indexer
 
 ```sh
 python3 brc20_light_client_psql.py

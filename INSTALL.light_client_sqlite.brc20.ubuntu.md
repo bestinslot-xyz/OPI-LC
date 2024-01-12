@@ -33,13 +33,12 @@ cd OPI-LC/brc20_light_client_sqlite
 wget https://opi-light-client-files.fra1.digitaloceanspaces.com/light_client_brc20_sqlite_last.sqlite3.tar.bz2
 tar -xvf light_client_brc20_sqlite_last.sqlite3.tar.bz2
 rm light_client_brc20_sqlite_last.sqlite3.tar.bz2
-mv .env_sqlite .env
 ```
 
-2) Set REPORT_NAME in .env, replace `<name>` with your node name. NOTE: if there is `/` in your name replace it with `\/`
+2) Run initialise_sqlite.py to initialise .env config
 
 ```sh
-sed -i 's/REPORT_NAME="opi_brc20_light_client_sqlite"/REPORT_NAME="<name>"/g' .env
+python3 initialise_sqlite.py
 ```
 
 3) Run the indexer
