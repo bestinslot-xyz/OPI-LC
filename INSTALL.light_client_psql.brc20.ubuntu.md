@@ -72,7 +72,7 @@ mv .env_psql .env
 sed -i 's/DB_PASSWD=""/DB_PASSWD="<password>"/g' .env
 ```
 
-3) Set REPORT_NAME in .env, replace `<name>` with your node name. NOTE: if there is `/` in your password replace it with `\/`
+3) Set REPORT_NAME in .env, replace `<name>` with your node name. NOTE: if there is `/` in your name replace it with `\/`
 
 ```sh
 sed -i 's/REPORT_NAME="opi_brc20_light_client"/REPORT_NAME="<name>"/g' .env
