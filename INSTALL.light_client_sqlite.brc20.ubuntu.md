@@ -23,6 +23,13 @@ python3 -m pip install python-dotenv;
 python3 -m pip install buidl;
 ```
 
+## Install uncompress dependency for backup restore
+
+```sh
+sudo apt update
+sudo apt install bzip2
+```
+
 ## Setup Light Client
 
 1) Clone repository, restore DB from last backup

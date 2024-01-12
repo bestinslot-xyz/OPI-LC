@@ -19,6 +19,7 @@ if init_env:
   REPORT_URL="https://api.opi.network/report_block"
   REPORT_RETRIES="10"
   REPORT_NAME=""
+  CREATE_EXTRA_TABLES="true"
   print("Initialising .env file")
   print("leave blank to use default values")
   res = input("BRC20 SQLite3 DB file name (Default: db.sqlite3): ")
@@ -47,6 +48,9 @@ if init_env:
         break
       else:
         print('Report name cannot be empty')
+  res = input("Create extra tables for faster queries (Default: true) set to true for creating brc20_current_balances and brc20_unused_tx_inscrs tables: ")
+  if res != '':
+    CREATE_EXTRA_TABLES = res
   f = open('.env', 'w')
   f.write("DB_DATABASE_FILE=\""+DB_DATABASE_FILE+"\"\n")
   f.write("FIRST_INSCRIPTION_HEIGHT=\""+FIRST_INSCRIPTION_HEIGHT+"\"\n")
@@ -55,5 +59,6 @@ if init_env:
   f.write("REPORT_URL=\""+REPORT_URL+"\"\n")
   f.write("REPORT_RETRIES=\""+REPORT_RETRIES+"\"\n")
   f.write("REPORT_NAME=\""+REPORT_NAME+"\"\n")
+  f.write("CREATE_EXTRA_TABLES=\""+CREATE_EXTRA_TABLES+"\"\n")
   f.close()
 
