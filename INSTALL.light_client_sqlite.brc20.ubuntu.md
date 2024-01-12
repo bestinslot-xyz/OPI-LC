@@ -48,8 +48,48 @@ rm light_client_brc20_sqlite_last.sqlite3.tar.bz2
 python3 initialise_sqlite.py
 ```
 
-3) Run the indexer
+## Run OPI Light-Client
 
 ```sh
 python3 brc20_light_client_sqlite.py
+```
+
+## (Optional) Setup API
+
+
+## Installing NodeJS
+
+These steps are following the guide at [here](https://github.com/nodesource/distributions).
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+
+NODE_MAJOR=20
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+
+sudo apt-get update
+sudo apt-get install nodejs -y
+```
+
+## Installing node modules
+
+```bash
+cd OPI-LC/brc20_light_client_api; npm install;
+```
+
+## Setup API
+
+Run initialise_api.py to initialise .env config
+
+```sh
+cd OPI-LC/brc20_light_client_api; python3 initialise_api.py
+```
+
+## Run API
+
+```sh
+node api.js
 ```
