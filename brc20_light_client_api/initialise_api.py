@@ -50,8 +50,6 @@ if init_env:
       DB_PORT = os.getenv("DB_PORT") or "5432"
       DB_DATABASE = os.getenv("DB_DATABASE") or "postgres"
       DB_PASSWD = os.getenv("DB_PASSWD")
-      DB_SSL = os.getenv("DB_SSL") or "true"
-      DB_MAX_CONNECTIONS = os.getenv("DB_MAX_CONNECTIONS") or "10"
       USE_EXTRA_TABLES = os.getenv("CREATE_EXTRA_TABLES") or "true"
     else:
       res = input("BRC20 Postgres DB username (Default: postgres): ")
@@ -68,15 +66,15 @@ if init_env:
         DB_DATABASE = res
       res = input("BRC20 Postgres DB password: ")
       DB_PASSWD = res
-      res = input("BRC20 Postgres DB use SSL (Default: true) may need to be set to false on Windows machines: ")
-      if res != '':
-        DB_SSL = res
-      res = input("BRC20 Postgres DB max connections (Default: 10): ")
-      if res != '':
-        DB_MAX_CONNECTIONS = res
       res = input("Use extra tables (Default: true): ")
       if res != '':
         USE_EXTRA_TABLES = res
+    res = input("BRC20 Postgres DB use SSL (Default: true) may need to be set to false on Windows machines: ")
+    if res != '':
+      DB_SSL = res
+    res = input("BRC20 Postgres DB max connections (Default: 10): ")
+    if res != '':
+      DB_MAX_CONNECTIONS = res
   elif DB_TYPE == 'sqlite':
     use_other_env = False
     other_env_exists = os.path.isfile('../brc20_light_client_sqlite/.env')

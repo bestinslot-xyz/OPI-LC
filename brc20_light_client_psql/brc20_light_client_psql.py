@@ -145,6 +145,7 @@ def fix_numstr_decimals(num_str, decimals):
   return num_str
 
 def script_to_address(pkscript):
+  if pkscript is None: return None
   script = buidl.Script.parse(raw=bytearray.fromhex(pkscript))
   if script.is_p2pkh():
     return buidl.P2PKHScriptPubKey(script.commands[2]).address()

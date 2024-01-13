@@ -387,6 +387,21 @@ app.get('/v1/brc20/get_hash_of_all_current_balances', async (request, response) 
       let params = [current_block_height]
 
       let res = await query_db(query, params)
+      res.rows.sort((a, b) => {
+        if (a.pkscript < b.pkscript) {
+          return -1
+        } else if (a.pkscript > b.pkscript) {
+          return 1
+        } else {
+          if (a.tick < b.tick) {
+            return -1
+          } else if (a.tick > b.tick) {
+            return 1
+          } else {
+            return 0
+          }
+        }
+      })
       let whole_str = ''
       res.rows.forEach((row) => {
         if (parseInt(row.overall_balance) != 0) {
@@ -405,6 +420,21 @@ app.get('/v1/brc20/get_hash_of_all_current_balances', async (request, response) 
       let params = []
 
       let res = await query_db(query, params)
+      res.rows.sort((a, b) => {
+        if (a.pkscript < b.pkscript) {
+          return -1
+        } else if (a.pkscript > b.pkscript) {
+          return 1
+        } else {
+          if (a.tick < b.tick) {
+            return -1
+          } else if (a.tick > b.tick) {
+            return 1
+          } else {
+            return 0
+          }
+        }
+      })
       let whole_str = ''
       res.rows.forEach((row) => {
         if (parseInt(row.overall_balance) != 0) {
