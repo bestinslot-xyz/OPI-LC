@@ -42,6 +42,7 @@ rm get-pip.py
 or
 
 ```sh
+sudo apt update
 sudo apt install python3-pip
 ```
 
@@ -113,7 +114,7 @@ cd OPI-LC/brc20/api; npm install;
 Run initialise_api.py to initialise .env config
 
 ```sh
-cd OPI-LC/brc20/api; python3 initialise_api.py
+python3 initialise_api.py
 ```
 
 ## Run API
