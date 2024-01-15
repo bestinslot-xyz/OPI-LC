@@ -23,7 +23,7 @@ if (DB_TYPE == 'psql') {
     ssl: process.env.DB_SSL == 'true' ? true : false
   })
 } else if (DB_TYPE == 'sqlite') {
-  db_pool = new sqlite3.Database(process.env.DB_DATABASE_FILE || "../brc20_light_client_sqlite/db.sqlite3")
+  db_pool = new sqlite3.Database(process.env.DB_DATABASE_FILE || "../sqlite/db.sqlite3")
 } else {
   console.log('DB_TYPE not supported')
   process.exit(1)

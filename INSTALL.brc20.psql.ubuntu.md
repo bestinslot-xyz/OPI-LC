@@ -53,13 +53,18 @@ python3 -m pip install psycopg2-binary;
 python3 -m pip install buidl;
 ```
 
+On some systems, requests is not installed by default. If you get "requests" not found error while running the client, run this:
+```sh
+python3 -m pip install requests;
+```
+
 ## Setup Light Client
 
 1) Download files, restore DB from last backup
 
 ```sh
 git clone https://github.com/bestinslot-xyz/OPI-LC.git
-cd OPI-LC/brc20_light_client_psql
+cd OPI-LC/brc20/psql
 wget https://opi-light-client-files.fra1.digitaloceanspaces.com/light_client_brc20_last.dump
 sudo -u postgres pg_restore -U postgres -Fc -d postgres < light_client_brc20_last.dump
 rm light_client_brc20_last.dump
@@ -77,7 +82,7 @@ python3 initialise_psql.py
 python3 brc20_light_client_psql.py
 ```
 
-## (Optional) Setup API
+# (Optional) Setup API
 
 
 ## Installing NodeJS
@@ -100,7 +105,7 @@ sudo apt-get install nodejs -y
 ## Installing node modules
 
 ```bash
-cd OPI-LC/brc20_light_client_api; npm install;
+cd OPI-LC/brc20/api; npm install;
 ```
 
 ## Setup API
@@ -108,7 +113,7 @@ cd OPI-LC/brc20_light_client_api; npm install;
 Run initialise_api.py to initialise .env config
 
 ```sh
-cd OPI-LC/brc20_light_client_api; python3 initialise_api.py
+cd OPI-LC/brc20/api; python3 initialise_api.py
 ```
 
 ## Run API

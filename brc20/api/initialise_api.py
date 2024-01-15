@@ -21,7 +21,7 @@ if init_env:
   DB_PASSWD=""
   DB_SSL="true"
   DB_MAX_CONNECTIONS=10
-  DB_DATABASE_FILE="../brc20_light_client_sqlite/db.sqlite3"
+  DB_DATABASE_FILE="../sqlite/db.sqlite3"
   USE_EXTRA_TABLES="true"
   API_HOST="127.0.0.1"
   API_PORT="8000"
@@ -32,19 +32,19 @@ if init_env:
     res = input("BRC20 Postgres DB type (Default: psql) set to sqlite for sqlite version: ")
     if res != '':
       DB_TYPE = res
-      if DB_TYPE != 'sqlite' and DB_TYPE != 'psql':
-        print('DB type can only be sqlite or psql')
-      else:
-        break
+    if DB_TYPE != 'sqlite' and DB_TYPE != 'psql':
+      print('DB type can only be sqlite or psql')
+    else:
+      break
   if DB_TYPE == 'psql':
     use_other_env = False
-    other_env_exists = os.path.isfile('../brc20_light_client_psql/.env')
+    other_env_exists = os.path.isfile('../psql/.env')
     if other_env_exists:
-      res = input(".env on brc20_light_client_psql already exists, do you want to use values from there? (y/n) ")
+      res = input(".env on psql already exists, do you want to use values from there? (y/n) ")
       if res == 'y':
         use_other_env = True
     if use_other_env:
-      load_dotenv(dotenv_path='../brc20_light_client_psql/.env')
+      load_dotenv(dotenv_path='../psql/.env')
       DB_USER = os.getenv("DB_USER") or "postgres"
       DB_HOST = os.getenv("DB_HOST") or "localhost"
       DB_PORT = os.getenv("DB_PORT") or "5432"
@@ -77,17 +77,17 @@ if init_env:
       DB_MAX_CONNECTIONS = res
   elif DB_TYPE == 'sqlite':
     use_other_env = False
-    other_env_exists = os.path.isfile('../brc20_light_client_sqlite/.env')
+    other_env_exists = os.path.isfile('../sqlite/.env')
     if other_env_exists:
-      res = input(".env on brc20_light_client_sqlite already exists, do you want to use values from there? (y/n) ")
+      res = input(".env on sqlite already exists, do you want to use values from there? (y/n) ")
       if res == 'y':
         use_other_env = True
     if use_other_env:
-      load_dotenv(dotenv_path='../brc20_light_client_sqlite/.env')
-      DB_DATABASE_FILE = "../brc20_light_client_sqlite/" + (os.getenv("DB_DATABASE_FILE") or "db.sqlite3")
+      load_dotenv(dotenv_path='../sqlite/.env')
+      DB_DATABASE_FILE = "../sqlite/" + (os.getenv("DB_DATABASE_FILE") or "db.sqlite3")
       USE_EXTRA_TABLES = os.getenv("CREATE_EXTRA_TABLES") or "true"
     else:
-      res = input("BRC20 SQLite DB file path (Default: ../brc20_light_client_sqlite/db.sqlite3): ")
+      res = input("BRC20 SQLite DB file path (Default: ../sqlite/db.sqlite3): ")
       if res != '':
         DB_DATABASE_FILE = res
       res = input("Use extra tables (Default: true): ")

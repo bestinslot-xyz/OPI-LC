@@ -23,6 +23,11 @@ python3 -m pip install python-dotenv;
 python3 -m pip install buidl;
 ```
 
+On some systems, requests is not installed by default. If you get "requests" not found error while running the client, run this:
+```sh
+python3 -m pip install requests;
+```
+
 ## Install uncompress dependency for backup restore
 
 ```sh
@@ -36,7 +41,7 @@ sudo apt install bzip2
 
 ```sh
 git clone https://github.com/bestinslot-xyz/OPI-LC.git
-cd OPI-LC/brc20_light_client_sqlite
+cd OPI-LC/brc20/sqlite
 wget https://opi-light-client-files.fra1.digitaloceanspaces.com/light_client_brc20_sqlite_last.sqlite3.tar.bz2
 tar -xvf light_client_brc20_sqlite_last.sqlite3.tar.bz2
 rm light_client_brc20_sqlite_last.sqlite3.tar.bz2
@@ -54,7 +59,7 @@ python3 initialise_sqlite.py
 python3 brc20_light_client_sqlite.py
 ```
 
-## (Optional) Setup API
+# (Optional) Setup API
 
 
 ## Installing NodeJS
@@ -77,7 +82,7 @@ sudo apt-get install nodejs -y
 ## Installing node modules
 
 ```bash
-cd OPI-LC/brc20_light_client_api; npm install;
+cd OPI-LC/brc20/api; npm install;
 ```
 
 ## Setup API
@@ -85,7 +90,7 @@ cd OPI-LC/brc20_light_client_api; npm install;
 Run initialise_api.py to initialise .env config
 
 ```sh
-cd OPI-LC/brc20_light_client_api; python3 initialise_api.py
+cd OPI-LC/brc20/api; python3 initialise_api.py
 ```
 
 ## Run API
