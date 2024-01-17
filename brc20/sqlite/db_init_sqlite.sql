@@ -69,4 +69,4 @@ CREATE TABLE brc20_indexer_version (
 	indexer_version text NOT NULL,
 	db_version int4 NOT NULL,
 );
-INSERT INTO brc20_indexer_version (indexer_version, db_version) VALUES ('opi-brc20-open-source v0.2.0', 2);
+INSERT INTO brc20_indexer_version (indexer_version, db_version) VALUES ("opi-brc20-light-client-sqlite v0.2.0", 1);

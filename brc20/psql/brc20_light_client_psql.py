@@ -16,7 +16,7 @@ block_events_str = ""
 EVENT_SEPARATOR = "|"
 CAN_BE_FIXED_INDEXER_VERSIONS = [ ]
 INDEXER_VERSION = "opi-brc20-light-client v0.2.0"
-DB_VERSION = 2
+DB_VERSION = 1
 
 ## psycopg2 doesn't get decimal size from postgres and defaults to 28 which is not enough for brc-20 so we use long which is infinite for integers
 DEC2LONG = psycopg2.extensions.new_type(
