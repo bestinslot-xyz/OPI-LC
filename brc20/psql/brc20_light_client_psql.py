@@ -1057,8 +1057,8 @@ def reorg_on_extra_tables(reorg_height):
                     VALUES (%s, %s, %s, %s, %s, %s, %s)''', 
                     (inscription_id, new_event["tick"], int(new_event["amount"]), new_event["source_pkScript"], new_event["source_wallet"], event_id, block_height))
 
-  cur.execute('delete from brc20_block_hashes_current_balances where block_height > %s;', (reorg_height,)) ## delete new block hashes
-  cur.execute("SELECT setval('brc20_block_hashes_current_balances_id_seq', max(id)) from brc20_block_hashes_current_balances;") ## reset id sequence
+  cur.execute('delete from brc20_extras_block_hashes where block_height > %s;', (reorg_height,)) ## delete new block hashes
+  cur.execute("SELECT setval('brc20_extras_block_hashes_id_seq', max(id)) from brc20_extras_block_hashes;") ## reset id sequence
   cur.execute('commit;')
 
 def initial_index_of_extra_tables():
