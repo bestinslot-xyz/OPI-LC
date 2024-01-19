@@ -45,7 +45,9 @@ For detailed installation guides:
 - BRC20
   - Ubuntu
     - [PostgreSQL](INSTALL.brc20.psql.ubuntu.md)
-    - [SQLite3](INSTALL.brc20.sqlite.ubuntu.md)
+    - SQLite3
+      - [en](INSTALL.brc20.sqlite.ubuntu.md)
+      - [cn](INSTALL.brc20.sqlite.ubuntu.cn.md)
 
 # Update
 
