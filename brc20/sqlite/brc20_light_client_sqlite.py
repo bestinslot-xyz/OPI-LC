@@ -515,7 +515,7 @@ def get_block_from_opi_network(block_height):
     print("Trying to get events from " + event_provider)
     url = event_provider + '/v1/brc20/block_height'
     try:
-      r = requests.get(url)
+      r = requests.get(url, timeout=5)
       if r.status_code != 200:
         print("Error getting block height from OPI network")
         inner_event_providers.remove(event_provider)
