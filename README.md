@@ -44,7 +44,9 @@ Also do not forget to change `REPORT_NAME` to differentiate your node from other
 For detailed installation guides:
 - BRC20
   - Ubuntu
-    - [PostgreSQL](INSTALL.brc20.psql.ubuntu.md)
+    - PostgreSQL
+      - [en](INSTALL.brc20.psql.ubuntu.md)
+      - [cn](INSTALL.brc20.psql.ubuntu.cn.md)
     - SQLite3
       - [en](INSTALL.brc20.sqlite.ubuntu.md)
       - [cn](INSTALL.brc20.sqlite.ubuntu.cn.md)
