@@ -1,7 +1,7 @@
 CREATE TABLE brc20_block_hashes (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	block_height int4 NOT NULL,
-	block_hash text NOT NULL,
+	block_hash text NOT NULL
 );
 CREATE UNIQUE INDEX brc20_block_hashes_block_height_idx ON brc20_block_hashes (block_height);
 
@@ -9,11 +9,11 @@ CREATE TABLE brc20_historic_balances (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	pkscript text NOT NULL,
 	wallet text NULL,
-	tick varchar(4) NOT NULL,
+	tick text NOT NULL,
 	overall_balance TEXT NOT NULL,
 	available_balance TEXT NOT NULL,
 	block_height int4 NOT NULL,
-	event_id int8 NOT NULL,
+	event_id int8 NOT NULL
 );
 CREATE UNIQUE INDEX brc20_historic_balances_event_id_idx ON brc20_historic_balances (event_id);
 CREATE INDEX brc20_historic_balances_block_height_idx ON brc20_historic_balances (block_height);
@@ -27,7 +27,7 @@ CREATE TABLE brc20_events (
 	event_type int4 NOT NULL,
 	block_height int4 NOT NULL,
 	inscription_id text NOT NULL,
-	"event" jsonb NOT NULL,
+	"event" jsonb NOT NULL
 );
 CREATE UNIQUE INDEX brc20_events_event_type_inscription_id_idx ON brc20_events (event_type, inscription_id);
 CREATE INDEX brc20_events_block_height_idx ON brc20_events (block_height);
@@ -37,27 +37,32 @@ CREATE INDEX brc20_events_inscription_id_idx ON brc20_events (inscription_id);
 
 CREATE TABLE brc20_tickers (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-	tick varchar(4) NOT NULL,
+	tick text NOT NULL,
+	original_tick varchar(4) NOT NULL,
 	max_supply TEXT NOT NULL,
 	decimals int4 NOT NULL,
 	limit_per_mint TEXT NOT NULL,
 	remaining_supply TEXT NOT NULL,
-	block_height int4 NOT NULL,
+	burned_supply TEXT NOT NULL DEFAULT 0,
+	is_self_mint TEXT NOT NULL,
+	deploy_inscription_id text NOT NULL,
+	block_height int4 NOT NULL
 );
 CREATE UNIQUE INDEX brc20_tickers_tick_idx ON brc20_tickers (tick);
+CREATE UNIQUE INDEX brc20_tickers_original_tick_idx ON brc20_tickers (original_tick);
 
 CREATE TABLE brc20_cumulative_event_hashes (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	block_height int4 NOT NULL,
 	block_event_hash text NOT NULL,
-	cumulative_event_hash text NOT NULL,
+	cumulative_event_hash text NOT NULL
 );
 CREATE UNIQUE INDEX brc20_cumulative_event_hashes_block_height_idx ON brc20_cumulative_event_hashes (block_height);
 
 CREATE TABLE brc20_event_types (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	event_type_name text NOT NULL,
-	event_type_id int4 NOT NULL,
+	event_type_id int4 NOT NULL
 );
 INSERT INTO brc20_event_types (event_type_name, event_type_id) VALUES ('deploy-inscribe', 0);
 INSERT INTO brc20_event_types (event_type_name, event_type_id) VALUES ('mint-inscribe', 1);
@@ -68,5 +73,6 @@ CREATE TABLE brc20_indexer_version (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	indexer_version text NOT NULL,
 	db_version int4 NOT NULL,
+	event_hash_version int4 NOT NULL
 );
-INSERT INTO brc20_indexer_version (indexer_version, db_version) VALUES ("opi-brc20-light-client-sqlite v0.2.0", 1);
+INSERT INTO brc20_indexer_version (indexer_version, db_version, event_hash_version) VALUES ("opi-brc20-light-client-sqlite v0.3.0", 4, 2);

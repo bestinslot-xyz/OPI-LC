@@ -43,7 +43,7 @@ sudo apt install bzip2
 ```sh
 git clone https://github.com/bestinslot-xyz/OPI-LC.git
 cd OPI-LC/brc20/sqlite
-wget https://opi-light-client-files.fra1.digitaloceanspaces.com/light_client_brc20_sqlite_last.sqlite3.tar.bz2
+wget http://s3.opi.network:9000/opi-light-client-files/db_4/light_client_brc20_sqlite_last.sqlite3.tar.bz2
 tar -xvf light_client_brc20_sqlite_last.sqlite3.tar.bz2
 rm light_client_brc20_sqlite_last.sqlite3.tar.bz2
 ```

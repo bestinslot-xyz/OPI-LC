@@ -14,8 +14,12 @@ in_commit = False
 block_events_str = ""
 EVENT_SEPARATOR = "|"
 CAN_BE_FIXED_INDEXER_VERSIONS = [ ]
-INDEXER_VERSION = "opi-brc20-light-client-sqlite v0.2.0"
-DB_VERSION = 1
+INDEXER_VERSION = "opi-brc20-light-client-sqlite v0.3.0"
+DB_VERSION = 4
+EVENT_HASH_VERSION = 2
+EVENT_PROVIDER_USABLE_EVENT_HASH_VERSIONS = [ 2 ]
+
+SELF_MINT_ENABLE_HEIGHT = 837090
 
 ## load env variables
 load_dotenv()
@@ -165,9 +169,11 @@ def get_event_str(event, event_type, inscription_id):
     res += inscription_id + ";"
     res += event["deployer_pkScript"] + ";"
     res += event["tick"] + ";"
+    res += event["original_tick"] + ";"
     res += fix_numstr_decimals(event["max_supply"], decimals_int) + ";"
     res += event["decimals"] + ";"
-    res += fix_numstr_decimals(event["limit_per_mint"], decimals_int)
+    res += fix_numstr_decimals(event["limit_per_mint"], decimals_int) + ";"
+    res += event["is_self_mint"]
     return res
   elif event_type == "mint-inscribe":
     decimals_int = ticks[event["tick"]][2]
@@ -175,7 +181,9 @@ def get_event_str(event, event_type, inscription_id):
     res += inscription_id + ";"
     res += event["minted_pkScript"] + ";"
     res += event["tick"] + ";"
-    res += fix_numstr_decimals(event["amount"], decimals_int)
+    res += event["original_tick"] + ";"
+    res += fix_numstr_decimals(event["amount"], decimals_int) + ";"
+    res += event["parent_id"]
     return res
   elif event_type == "transfer-inscribe":
     decimals_int = ticks[event["tick"]][2]
@@ -183,6 +191,7 @@ def get_event_str(event, event_type, inscription_id):
     res += inscription_id + ";"
     res += event["source_pkScript"] + ";"
     res += event["tick"] + ";"
+    res += event["original_tick"] + ";"
     res += fix_numstr_decimals(event["amount"], decimals_int)
     return res
   elif event_type == "transfer-transfer":
@@ -195,6 +204,7 @@ def get_event_str(event, event_type, inscription_id):
     else:
       res += ";"
     res += event["tick"] + ";"
+    res += event["original_tick"] + ";"
     res += fix_numstr_decimals(event["amount"], decimals_int)
     return res
   else:
@@ -255,7 +265,7 @@ def reset_caches():
   balance_cache = {}
   transfer_inscribe_event_cache = {}
 
-def deploy_inscribe(block_height, inscription_id, deployer_pkScript, deployer_wallet, tick, max_supply, decimals, limit_per_mint):
+def deploy_inscribe(block_height, inscription_id, deployer_pkScript, deployer_wallet, tick, original_tick, max_supply, decimals, limit_per_mint, is_self_mint):
   global ticks, in_commit, block_events_str, event_types
   cur.execute("BEGIN;")
   in_commit = True
@@ -264,22 +274,24 @@ def deploy_inscribe(block_height, inscription_id, deployer_pkScript, deployer_wa
     "deployer_pkScript": deployer_pkScript,
     "deployer_wallet": deployer_wallet,
     "tick": tick,
+    "original_tick": original_tick,
     "max_supply": str(max_supply),
     "decimals": str(decimals),
-    "limit_per_mint": str(limit_per_mint)
+    "limit_per_mint": str(limit_per_mint),
+    "is_self_mint": str(is_self_mint)
   }
   block_events_str += get_event_str(event, "deploy-inscribe", inscription_id) + EVENT_SEPARATOR
   execute_with_params('''insert into brc20_events (event_type, block_height, inscription_id, event)
     values (%s, %s, %s, %s);''', (event_types["deploy-inscribe"], block_height, inscription_id, json.dumps(event)))
   
-  execute_with_params('''insert into brc20_tickers (tick, max_supply, decimals, limit_per_mint, remaining_supply, block_height)
-    values (%s, %s, %s, %s, %s, %s);''', (tick, str(max_supply), decimals, str(limit_per_mint), str(max_supply), block_height))
+  execute_with_params('''insert into brc20_tickers (tick, original_tick, max_supply, decimals, limit_per_mint, remaining_supply, block_height, is_self_mint, deploy_inscription_id)
+    values (%s, %s, %s, %s, %s, %s, %s, %s, %s);''', (tick, original_tick, str(max_supply), decimals, str(limit_per_mint), str(max_supply), block_height, is_self_mint, inscription_id))
   
   cur.execute("COMMIT;")
   in_commit = False
-  ticks[tick] = [max_supply, limit_per_mint, decimals]
+  ticks[tick] = [max_supply, limit_per_mint, decimals, is_self_mint == "true", inscription_id]
 
-def mint_inscribe(block_height, inscription_id, minted_pkScript, minted_wallet, tick, amount):
+def mint_inscribe(block_height, inscription_id, minted_pkScript, minted_wallet, tick, original_tick, amount, parent_id):
   global ticks, in_commit, block_events_str, event_types
   cur.execute("BEGIN;")
   in_commit = True
@@ -288,7 +300,9 @@ def mint_inscribe(block_height, inscription_id, minted_pkScript, minted_wallet, 
     "minted_pkScript": minted_pkScript,
     "minted_wallet": minted_wallet,
     "tick": tick,
-    "amount": str(amount)
+    "original_tick": original_tick,
+    "amount": str(amount),
+    "parent_id": parent_id
   }
   block_events_str += get_event_str(event, "mint-inscribe", inscription_id) + EVENT_SEPARATOR
   execute_with_params('''insert into brc20_events (event_type, block_height, inscription_id, event)
@@ -311,7 +325,7 @@ def mint_inscribe(block_height, inscription_id, minted_pkScript, minted_wallet, 
   in_commit = False
   ticks[tick][0] -= amount
 
-def transfer_inscribe(block_height, inscription_id, source_pkScript, source_wallet, tick, amount):
+def transfer_inscribe(block_height, inscription_id, source_pkScript, source_wallet, tick, original_tick, amount):
   global in_commit, block_events_str, event_types
   cur.execute("BEGIN;")
   in_commit = True
@@ -320,6 +334,7 @@ def transfer_inscribe(block_height, inscription_id, source_pkScript, source_wall
     "source_pkScript": source_pkScript,
     "source_wallet": source_wallet,
     "tick": tick,
+    "original_tick": original_tick,
     "amount": str(amount)
   }
   block_events_str += get_event_str(event, "transfer-inscribe", inscription_id) + EVENT_SEPARATOR
@@ -337,7 +352,7 @@ def transfer_inscribe(block_height, inscription_id, source_pkScript, source_wall
   in_commit = False
   save_transfer_inscribe_event(inscription_id, event)
 
-def transfer_transfer_normal(block_height, inscription_id, spent_pkScript, spent_wallet, tick, amount, using_tx_id):
+def transfer_transfer_normal(block_height, inscription_id, spent_pkScript, spent_wallet, tick, original_tick, amount, using_tx_id):
   global in_commit, block_events_str, event_types
   cur.execute("BEGIN;")
   in_commit = True
@@ -351,6 +366,7 @@ def transfer_transfer_normal(block_height, inscription_id, spent_pkScript, spent
     "spent_pkScript": spent_pkScript,
     "spent_wallet": spent_wallet,
     "tick": tick,
+    "original_tick": original_tick,
     "amount": str(amount),
     "using_tx_id": str(using_tx_id)
   }
@@ -373,10 +389,13 @@ def transfer_transfer_normal(block_height, inscription_id, spent_pkScript, spent
                 values (%s, %s, %s, %s, %s, %s, %s);''', 
                 (spent_pkScript, spent_wallet, tick, str(last_balance["overall_balance"]), str(last_balance["available_balance"]), block_height, -1 * event_id)) ## negated to make a unique event_id
   
+  if spent_pkScript == '6a':
+    cur.execute('''update brc20_tickers set burned_supply = burned_supply + %s where tick = %s;''', (amount, tick))
+  
   cur.execute("COMMIT;")
   in_commit = False
 
-def transfer_transfer_spend_to_fee(block_height, inscription_id, tick, amount, using_tx_id):
+def transfer_transfer_spend_to_fee(block_height, inscription_id, tick, original_tick, amount, using_tx_id):
   global in_commit, block_events_str, event_types
   cur.execute("BEGIN;")
   in_commit = True
@@ -390,6 +409,7 @@ def transfer_transfer_spend_to_fee(block_height, inscription_id, tick, amount, u
     "spent_pkScript": None,
     "spent_wallet": None,
     "tick": tick,
+    "original_tick": original_tick,
     "amount": str(amount),
     "using_tx_id": str(using_tx_id)
   }
@@ -429,7 +449,7 @@ def get_max_block_height_of_opi_network():
   global max_block_height_of_opi_network_cache, max_block_height_of_opi_network_cache_ts, max_block_height_of_opi_network_cache_timeout
   if max_block_height_of_opi_network_cache is not None and time.time() - max_block_height_of_opi_network_cache_ts < max_block_height_of_opi_network_cache_timeout:
     return max_block_height_of_opi_network_cache
-  url = 'https://opi.network/api/get_best_verified_block'
+  url = 'https://api.opi.network/lc/get_best_verified_block?event_hash_version=' + str(EVENT_HASH_VERSION)
   for _ in range(10):
     try:
       r = requests.get(url)
@@ -450,7 +470,7 @@ events_providers = []
 def get_events_providers():
   global events_providers
   events_providers = []
-  url = 'https://opi.network/api/get_verified_event_providers'
+  url = 'https://api.opi.network/lc/get_verified_event_providers?event_hash_version=' + str(EVENT_HASH_VERSION)
   for _ in range(10):
     try:
       r = requests.get(url)
@@ -482,7 +502,7 @@ def get_block_info_from_opi_network(block_height):
     return get_block_info_from_opi_network_cache
   block_hash = None
   opi_cumulative_event_hash = None
-  url = 'https://opi.network/api/get_best_hashes_for_block/' + str(block_height)
+  url = 'https://api.opi.network/lc/get_best_hashes_for_block/' + str(block_height) + '?event_hash_version=' + str(EVENT_HASH_VERSION)
   for _ in range(10):
     try:
       r = requests.get(url)
@@ -513,11 +533,31 @@ def get_block_from_opi_network(block_height):
   while len(inner_event_providers) != 0:
     event_provider = random.choice(inner_event_providers)
     print("Trying to get events from " + event_provider)
+    url = event_provider + '/v1/brc20/event_hash_version'
+    try:
+      r = requests.get(url)
+      if r.status_code != 200:
+        print("Error getting event hash version from Event Provider")
+        inner_event_providers.remove(event_provider)
+        time.sleep(0.1)
+        continue
+      if int(r.text) not in EVENT_PROVIDER_USABLE_EVENT_HASH_VERSIONS:
+        print("Event provider is using a different Event Hash Version!!")
+        print("Event Provider event hash version: " + r.text)
+        print("Usable event hash versions: " + str(EVENT_PROVIDER_USABLE_EVENT_HASH_VERSIONS))
+        inner_event_providers.remove(event_provider)
+        time.sleep(0.1)
+        continue
+    except:
+      print("Error getting event hash version from Event Provider")
+      inner_event_providers.remove(event_provider)
+      time.sleep(0.1)
+      continue
     url = event_provider + '/v1/brc20/block_height'
     try:
       r = requests.get(url)
       if r.status_code != 200:
-        print("Error getting block height from OPI network")
+        print("Error getting block height from Event Provider")
         inner_event_providers.remove(event_provider)
         time.sleep(0.1)
         continue
@@ -529,7 +569,7 @@ def get_block_from_opi_network(block_height):
         time.sleep(0.1)
         continue
     except:
-      print("Error getting block height from OPI network")
+      print("Error getting block height from Event Provider")
       inner_event_providers.remove(event_provider)
       time.sleep(0.1)
       continue
@@ -538,13 +578,13 @@ def get_block_from_opi_network(block_height):
       try:
         r = requests.get(url)
         if r.status_code != 200:
-          print("Error getting events from OPI network")
+          print("Error getting events from Event Provider")
           time.sleep(1)
           continue
         events = r.json()["result"]
         return [events, block_hash, opi_cumulative_event_hash]
       except:
-        print("Error getting events from OPI network")
+        print("Error getting events from Event Provider")
         time.sleep(1)
         continue
   return [None, None, None]
@@ -574,11 +614,11 @@ def index_block(block_height):
 
   ## refresh ticks
   sttm = time.time()
-  cur.execute('''select tick, remaining_supply, limit_per_mint, decimals from brc20_tickers;''')
+  cur.execute('''select tick, remaining_supply, limit_per_mint, decimals, is_self_mint, deploy_inscription_id from brc20_tickers;''')
   ticks_ = cur.fetchall()
   ticks = {}
   for t in ticks_:
-    ticks[t[0]] = [int(t[1]), int(t[2]), int(t[3])]
+    ticks[t[0]] = [int(t[1]), int(t[2]), int(t[3]), t[4] == 'true', t[5]]
   print("Ticks refreshed in " + str(time.time() - sttm) + " seconds")
   
   idx = 0
@@ -592,11 +632,16 @@ def index_block(block_height):
       break ## invalid event
 
     tick = event["tick"]
-    try: tick = tick.lower()
+    original_tick = event["original_tick"]
+    try: 
+      if tick != original_tick.lower():
+        error = True 
+        break ## invalid tick
     except:
       error = True 
       break ## invalid tick
-    if utf8len(tick) != 4: 
+    original_tick_len = utf8len(original_tick)
+    if original_tick_len != 4 and original_tick_len != 5:
       error = True
       break ## invalid tick
     
@@ -624,6 +669,9 @@ def index_block(block_height):
       if "limit_per_mint" not in event:
         error = True
         break ## invalid event
+      if "is_self_mint" not in event:
+        error = True
+        break ## invalid event
 
       if not is_positive_number(event["decimals"]): 
         error = True
@@ -644,7 +692,7 @@ def index_block(block_height):
       if max_supply is None: 
         error = True
         break ## invalid max supply
-      if max_supply > (2**64-1) * (10**18) or max_supply <= 0: 
+      if max_supply > (2**64-1) * (10**18) or max_supply < 0: 
         error = True
         break ## invalid max supply
 
@@ -656,11 +704,31 @@ def index_block(block_height):
         error = True
         break ## invalid limit per mint
       
+      is_self_mint = event["is_self_mint"]
+      if is_self_mint != "true" and is_self_mint != "false": 
+        error = True
+        break
+      if is_self_mint == 'true':
+        if original_tick_len != 5: 
+          error = True
+          break
+        if block_height < SELF_MINT_ENABLE_HEIGHT:
+          error = True
+          break ## self-mint not enabled yet
+        if max_supply == 0: 
+          max_supply = (2**64-1) * (10**18) ## infinite(ish) mint
+          if limit_per_mint == 0:
+            limit_per_mint = (2**64-1) * (10**18)
+      else:
+        if original_tick_len != 4: 
+          error = True
+          break
+      if max_supply == 0: continue ## invalid max supply
       
       inscr_id = event["inscription_id"]
       deployer_pkScript = event["deployer_pkScript"]
       deployer_wallet = script_to_address(event["deployer_pkScript"])
-      deploy_inscribe(block_height, inscr_id, deployer_pkScript, deployer_wallet, tick, max_supply, decimals, limit_per_mint)
+      deploy_inscribe(block_height, inscr_id, deployer_pkScript, deployer_wallet, tick, original_tick, max_supply, decimals, limit_per_mint, is_self_mint)
     
     # handle mint
     if event["event_type"] == 'mint-inscribe':
@@ -680,6 +748,9 @@ def index_block(block_height):
       #if "minted_wallet" not in event:
       #  error = True
       #  break ## invalid event
+      if "parent_id" not in event:
+        error = True
+        break ## invalid event
 
       if not is_positive_number(event["amount"]): 
         error = True
@@ -705,10 +776,17 @@ def index_block(block_height):
         error = True
         break ## mint too much
 
+      parent_id = event["parent_id"]
+      if ticks[tick][3]: ## self-mint
+        ## check parent token
+        if ticks[tick][4] != parent_id:
+          error = True
+          break ## invalid parent token
+
       inscr_id = event["inscription_id"]
       minted_pkScript = event["minted_pkScript"]
       minted_wallet = script_to_address(event["minted_pkScript"])
-      mint_inscribe(block_height, inscr_id, minted_pkScript, minted_wallet, tick, amount)
+      mint_inscribe(block_height, inscr_id, minted_pkScript, minted_wallet, tick, original_tick, amount, parent_id)
     
     # handle transfer
     if event["event_type"] == 'transfer-inscribe':
@@ -748,7 +826,7 @@ def index_block(block_height):
       if not check_available_balance(source_pkScript, tick, amount): 
         error = True
         break ## not enough available balance
-      transfer_inscribe(block_height, inscr_id, source_pkScript, source_wallet, tick, amount)
+      transfer_inscribe(block_height, inscr_id, source_pkScript, source_wallet, tick, original_tick, amount)
 
     # handle transfer
     if event["event_type"] == 'transfer-transfer':
@@ -796,8 +874,8 @@ def index_block(block_height):
       if is_used_or_invalid(inscr_id): 
         error = True
         break ## already used or invalid
-      if spent_pkScript is None: transfer_transfer_spend_to_fee(block_height, inscr_id, tick, amount, -1)
-      else: transfer_transfer_normal(block_height, inscr_id, spent_pkScript, spent_wallet, tick, amount, -1)
+      if spent_pkScript is None: transfer_transfer_spend_to_fee(block_height, inscr_id, tick, original_tick, amount, -1)
+      else: transfer_transfer_normal(block_height, inscr_id, spent_pkScript, spent_wallet, tick, original_tick, amount, -1)
   
   if error:
     return False
@@ -943,11 +1021,11 @@ def reindex_cumulative_hashes():
   max_block = row[1]
 
   sttm = time.time()
-  cur.execute('''select tick, remaining_supply, limit_per_mint, decimals from brc20_tickers;''')
+  cur.execute('''select tick, remaining_supply, limit_per_mint, decimals, is_self_mint, deploy_inscription_id from brc20_tickers;''')
   ticks_ = cur.fetchall()
   ticks = {}
   for t in ticks_:
-    ticks[t[0]] = [int(t[1]), int(t[2]), int(t[3])]
+    ticks[t[0]] = [int(t[1]), int(t[2]), int(t[3]), t[4] == 'true', t[5]]
   print("Ticks refreshed in " + str(time.time() - sttm) + " seconds")
 
   print("Reindexing cumulative hashes from " + str(min_block) + " to " + str(max_block))
@@ -972,10 +1050,10 @@ else:
   if db_indexer_version != INDEXER_VERSION:
     print("Indexer version mismatch!!")
     if db_indexer_version not in CAN_BE_FIXED_INDEXER_VERSIONS:
-      print("This version (" + db_indexer_version + ") cannot be fixed, please reset tables and reindex.")
+      print("This version (" + str(db_indexer_version) + ") cannot be fixed, please reset tables and reindex.")
       exit(1)
     else:
-      print("This version (" + db_indexer_version + ") can be fixed, fixing in 5 secs...")
+      print("This version (" + str(db_indexer_version) + ") can be fixed, fixing in 5 secs...")
       time.sleep(5)
       reindex_cumulative_hashes()
       cur.execute('alter table brc20_indexer_version add column if not exists db_version int4;') ## next versions will use DB_VERSION for DB check
@@ -1015,6 +1093,7 @@ def report_hashes(block_height):
     "node_type": "light_client_sqlite",
     "version": INDEXER_VERSION,
     "db_version": DB_VERSION,
+    "event_hash_version": EVENT_HASH_VERSION,
     "block_height": block_height,
     "block_hash": block_hash,
     "block_event_hash": block_event_hash,
