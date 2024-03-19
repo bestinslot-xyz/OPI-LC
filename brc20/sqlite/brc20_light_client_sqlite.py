@@ -1056,7 +1056,7 @@ if temp is None:
   print("Indexer version not found, db needs to be recreated from scratch, please run reset_init.py")
   exit(1)
 else:
-  db_version = cur.fetchone()[0]
+  db_version = temp[0]
   if db_version != DB_VERSION:
     print("DB version mismatch!!")
     if db_version not in CAN_BE_FIXED_DB_VERSIONS:
