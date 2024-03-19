@@ -14,9 +14,9 @@ ticks = {}
 in_commit = False
 block_events_str = ""
 EVENT_SEPARATOR = "|"
-CAN_BE_FIXED_INDEXER_VERSIONS = [ ]
-INDEXER_VERSION = "opi-brc20-light-client v0.3.0"
-DB_VERSION = 4
+CAN_BE_FIXED_DB_VERSIONS = [ 4 ]
+INDEXER_VERSION = "opi-brc20-light-client v0.3.1"
+DB_VERSION = 5
 EVENT_HASH_VERSION = 2
 EVENT_PROVIDER_USABLE_EVENT_HASH_VERSIONS = [ 2 ]
 
@@ -1034,21 +1034,30 @@ def reindex_cumulative_hashes():
       block_events_str += get_event_str(event, event_type, inscription_id) + EVENT_SEPARATOR
     update_event_hashes(block_height)
 
-cur.execute('select indexer_version from brc20_indexer_version;')
+def fix_db_from_version(version):
+  if version == 4:
+    print("Fixing db from version 4")
+    ## change type of original_tick in brc20_tickers to text
+    cur.execute('''alter table brc20_tickers alter column original_tick type text;''')
+  else:
+    print("Unknown db version, cannot fix db.")
+    exit(1)
+
+cur.execute('select db_version from brc20_indexer_version;')
 if cur.rowcount == 0:
-  cur.execute('insert into brc20_indexer_version (indexer_version, db_version) values (%s, %s);', (INDEXER_VERSION, DB_VERSION,))
+  print("Indexer version not found, db needs to be recreated from scratch, please run reset_init.py")
+  exit(1)
 else:
-  db_indexer_version = cur.fetchone()[0]
-  if db_indexer_version != INDEXER_VERSION:
-    print("Indexer version mismatch!!")
-    if db_indexer_version not in CAN_BE_FIXED_INDEXER_VERSIONS:
-      print("This version (" + str(db_indexer_version) + ") cannot be fixed, please reset tables and reindex.")
+  db_version = cur.fetchone()[0]
+  if db_version != DB_VERSION:
+    print("DB version mismatch!!")
+    if db_version not in CAN_BE_FIXED_DB_VERSIONS:
+      print("This version (" + str(db_version) + ") cannot be fixed, please reset tables and reindex.")
       exit(1)
     else:
-      print("This version (" + str(db_indexer_version) + ") can be fixed, fixing in 5 secs...")
+      print("This version (" + str(db_version) + ") can be fixed, fixing in 5 secs...")
       time.sleep(5)
-      reindex_cumulative_hashes()
-      cur.execute('alter table brc20_indexer_version add column if not exists db_version int4;') ## next versions will use DB_VERSION for DB check
+      fix_db_from_version(db_version)
       cur.execute('update brc20_indexer_version set indexer_version = %s, db_version = %s;', (INDEXER_VERSION, DB_VERSION,))
       print("Fixed.")
 

@@ -40,7 +40,7 @@ CREATE INDEX brc20_events_inscription_id_idx ON public.brc20_events USING btree 
 CREATE TABLE public.brc20_tickers (
 	id bigserial NOT NULL,
 	tick text NOT NULL,
-	original_tick varchar(4) NOT NULL,
+	original_tick text NOT NULL,
 	max_supply numeric(40) NOT NULL,
 	decimals int4 NOT NULL,
 	limit_per_mint numeric(40) NOT NULL,
@@ -81,4 +81,4 @@ CREATE TABLE public.brc20_indexer_version (
 	event_hash_version int4 NOT NULL,
 	CONSTRAINT brc20_indexer_version_pk PRIMARY KEY (id)
 );
-INSERT INTO public.brc20_indexer_version (indexer_version, db_version, event_hash_version) VALUES ('opi-brc20-light-client v0.3.0', 4, 2);
+INSERT INTO public.brc20_indexer_version (indexer_version, db_version, event_hash_version) VALUES ('opi-brc20-light-client v0.3.1', 5, 2);

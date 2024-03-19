@@ -38,7 +38,7 @@ CREATE INDEX brc20_events_inscription_id_idx ON brc20_events (inscription_id);
 CREATE TABLE brc20_tickers (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	tick text NOT NULL,
-	original_tick varchar(4) NOT NULL,
+	original_tick text NOT NULL,
 	max_supply TEXT NOT NULL,
 	decimals int4 NOT NULL,
 	limit_per_mint TEXT NOT NULL,
@@ -75,4 +75,4 @@ CREATE TABLE brc20_indexer_version (
 	db_version int4 NOT NULL,
 	event_hash_version int4 NOT NULL
 );
-INSERT INTO brc20_indexer_version (indexer_version, db_version, event_hash_version) VALUES ("opi-brc20-light-client-sqlite v0.3.0", 4, 2);
+INSERT INTO brc20_indexer_version (indexer_version, db_version, event_hash_version) VALUES ("opi-brc20-light-client-sqlite v0.3.1", 5, 2);
