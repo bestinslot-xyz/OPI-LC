@@ -1046,6 +1046,7 @@ def fix_db_from_version(version):
     print("Fixing db from version 4")
     ## change type of original_tick in brc20_tickers to text
     #cur.execute('''alter table brc20_tickers alter column original_tick type text;''') # not needed on sqlite since varchar length limit does not apply here
+    reorg_fix(SELF_MINT_ENABLE_HEIGHT - 1)
   else:
     print("Unknown db version, cannot fix db.")
     exit(1)
