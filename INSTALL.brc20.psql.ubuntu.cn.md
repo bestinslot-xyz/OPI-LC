@@ -68,7 +68,7 @@ python3 -m pip install requests;
 ```sh
 git clone https://github.com/bestinslot-xyz/OPI-LC.git
 cd OPI-LC/brc20/psql
-wget https://opi-light-client-files.fra1.digitaloceanspaces.com/light_client_brc20_last.dump
+wget http://s3.opi.network:9000/opi-light-client-files/db_4/light_client_brc20_last.dump
 sudo -u postgres pg_restore -U postgres -Fc -d postgres < light_client_brc20_last.dump
 rm light_client_brc20_last.dump
 ```
