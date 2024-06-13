@@ -171,6 +171,9 @@ app.get('/v1/brc20/activity_on_block', async (request, response) => {
     let result = []
     for (const row of res.rows) {
       let event = row.event
+      if (DB_TYPE == 'sqlite') {
+        event = JSON.parse(event)
+      }
       let event_type = event_type_id_to_name[row.event_type]
       let inscription_id = row.inscription_id
       event.event_type = event_type
