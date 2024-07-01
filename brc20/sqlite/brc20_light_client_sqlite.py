@@ -390,7 +390,10 @@ def transfer_transfer_normal(block_height, inscription_id, spent_pkScript, spent
                 (spent_pkScript, spent_wallet, tick, str(last_balance["overall_balance"]), str(last_balance["available_balance"]), block_height, -1 * event_id)) ## negated to make a unique event_id
   
   if spent_pkScript == '6a':
-    execute_with_params('''update brc20_tickers set burned_supply = burned_supply + %s where tick = %s;''', (amount, tick))
+    execute_with_params('''select burned_supply from brc20_tickers where tick = %s;''', (tick,))
+    burned_supply = cur.fetchone()[0]
+    burned_supply += amount
+    execute_with_params('''update brc20_tickers set burned_supply = %s where tick = %s;''', (burned_supply, tick))
   
   cur.execute("COMMIT;")
   in_commit = False
