@@ -391,8 +391,9 @@ def transfer_transfer_normal(block_height, inscription_id, spent_pkScript, spent
   
   if spent_pkScript == '6a':
     execute_with_params('''select burned_supply from brc20_tickers where tick = %s;''', (tick,))
-    burned_supply = cur.fetchone()[0]
+    burned_supply = int(cur.fetchone()[0])
     burned_supply += amount
+    burned_supply = str(burned_supply)
     execute_with_params('''update brc20_tickers set burned_supply = %s where tick = %s;''', (burned_supply, tick))
   
   cur.execute("COMMIT;")
