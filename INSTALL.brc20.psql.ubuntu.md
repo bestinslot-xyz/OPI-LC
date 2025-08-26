@@ -1,6 +1,8 @@
 # Detailed Installation Guide for OPI Light Client on Ubuntu 22.04
 
-## Installing PostgreSQL
+## Installing Dependencies
+
+### Installing PostgreSQL
 
 1) First install and run postgresql binaries.
 
@@ -29,68 +31,19 @@ sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '<password>';"
 sudo systemctl restart postgresql
 ```
 
-## Installing Python Libraries
+### Installing Cargo
 
-1) Install pip if you don't have it. [guide](https://pip.pypa.io/en/stable/installation/).
-
-```sh
-wget https://bootstrap.pypa.io/get-pip.py
-python3 get-pip.py
-rm get-pip.py
-```
-
-or
+1) Install cargo if you don't have it. [guide](https://doc.rust-lang.org/cargo/getting-started/installation.html).
 
 ```sh
-sudo apt update
-sudo apt install python3-pip
+curl https://sh.rustup.rs -sSf | sh
 ```
 
-2) Install dependencies
-
-```sh
-python3 -m pip install python-dotenv;
-python3 -m pip install psycopg2-binary;
-python3 -m pip install buidl;
-```
-
-On some systems, requests is not installed by default. If you get "requests" not found error while running the client, run this:
-```sh
-python3 -m pip install requests;
-```
-
-## Setup Light Client
-
-1) Download files, restore DB from last backup
-
-```sh
-git clone https://github.com/bestinslot-xyz/OPI-LC.git
-cd OPI-LC/brc20/psql
-wget http://s3.opi.network:9000/opi-light-client-files/db_4/light_client_brc20_last.dump
-sudo -u postgres pg_restore -U postgres -Fc -d postgres < light_client_brc20_last.dump
-rm light_client_brc20_last.dump
-```
-
-2) Run initialise_psql.py to initialise .env config
-
-```sh
-python3 initialise_psql.py
-```
-
-## Run OPI Light-Client
-
-```sh
-python3 brc20_light_client_psql.py
-```
-
-# (Optional) Setup API
-
-
-## Installing NodeJS
+### Installing NodeJS
 
 These steps are following the guide at [here](https://github.com/nodesource/distributions).
 
-```bash
+```sh
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
 sudo mkdir -p /etc/apt/keyrings
@@ -103,22 +56,113 @@ sudo apt-get update
 sudo apt-get install nodejs -y
 ```
 
-## Installing node modules
+## Setting up OPI v2 Light-Client
 
-```bash
-cd OPI-LC/brc20/api; npm install;
-```
-
-## Setup API
-
-Run initialise_api.py to initialise .env config
+1) Clone the OPI repository
 
 ```sh
-python3 initialise_api.py
+git clone https://github.com/bestinslot-xyz/OPI.git
+cd OPI/modules/brc20_index
 ```
 
-## Run API
+2) Set up environment for BRC20 indexer
+
+A light client setup requires `OPERATION_MODE=light`, here's a sample `.env` file, it also runs a Bitcoin RPC proxy server to load and forward events from OPI in absence of a full node:
 
 ```sh
+OPERATION_MODE="light"
+
+DB_USER="postgres"
+DB_HOST="localhost"
+DB_PORT="5432"
+DB_DATABASE="postgres"
+DB_PASSWD="<PASSWORD>"
+
+BRC20_PROG_ENABLED="true"
+BRC20_PROG_RPC_URL="http://127.0.0.1:18545"
+BRC20_PROG_BALANCE_SERVER_URL="127.0.0.1:18546"
+
+BITCOIN_RPC_CACHE_ENABLED="true"
+BITCOIN_RPC_PROXY_SERVER_ENABLED="true"
+BITCOIN_RPC_PROXY_SERVER_URL="127.0.0.1:18547"
+```
+
+3) Clone the BRC2.0 repository
+
+```sh
+git clone https://github.com/bestinslot-xyz/brc20-programmable-module.git
+cd brc20-programmable-module
+```
+
+4) Set up the environment for BRC2.0 programmable module
+
+Bitcoin RPC needs to be pointed at the light client proxy for programmable module, as there's no real full node. Here's a sample `.env` file for BRC2.0 programmable module:
+
+```sh
+BRC20_PROG_BALANCE_SERVER_URL=http://localhost:18546
+BITCOIN_RPC_URL=127.0.0.1:18547
+
+BRC20_PROG_RPC_SERVER_URL=127.0.0.1:18545
+BRC20_PROG_RPC_SERVER_ENABLE_AUTH=false
+
+# Required for trace hash calculation
+EVM_RECORD_TRACES=true
+```
+
+### (Optional) Setting up BRC20 API
+
+1) Install node modules
+
+```sh
+cd OPI/modules/brc20_api; npm install;
+```
+
+2) Set up the environment for the API
+
+Here's a sample `.env` file for the API:
+
+```sh
+DB_USER="postgres"
+DB_HOST="localhost"
+DB_PORT="5432"
+DB_DATABASE="postgres"
+DB_PASSWD="<PASSWORD>"
+DB_SSL="true"
+DB_MAX_CONNECTIONS=10
+
+API_HOST="127.0.0.1"
+API_PORT="8000"
+API_TRUSTED_PROXY_CNT="0"
+
+RATE_LIMIT_ENABLE="true"
+# 15 minutes: 15 * 60 * 1000 = 900000
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100
+```
+
+## Running Light Client
+
+### Run BRC2.0 Programmable Module
+
+```sh
+cd brc20-programmable-module;
+cargo build --release --features=server;
+cd target/release;
+./server -l info
+```
+
+### Run OPI v2 Light Client
+
+```sh
+cd OPI/modules/brc20_index;
+cargo build --release;
+cd target/release;
+./brc20-index -l info
+```
+
+### (Optional) Run API
+
+```sh
+cd OPI/modules/brc20_api;
 node api.js
 ```
