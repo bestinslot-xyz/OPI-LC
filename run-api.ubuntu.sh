@@ -10,7 +10,15 @@ else
     sudo npm install -g pm2
 fi
 
-git clone https://github.com/bestinslot-xyz/OPI.git
+if [ -d "OPI" ]; then
+    echo "OPI directory already exists. Pulling the latest changes..."
+    cd OPI
+    git pull
+    cd ..
+else
+    echo "Cloning OPI repository..."
+    git clone https://github.com/bestinslot-xyz/OPI.git
+fi
 
 cd OPI/modules/brc20_api
 npm install
