@@ -20,6 +20,8 @@ else
     git clone https://github.com/bestinslot-xyz/OPI.git
 fi
 
+cp .env OPI/modules/brc20_api/.env
+
 cd OPI/modules/brc20_api
 npm install
 
