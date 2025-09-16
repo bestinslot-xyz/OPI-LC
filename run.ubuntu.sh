@@ -8,6 +8,13 @@ set +o allexport
 # Exit on error, undefined variable
 set -eu
 
+if [ $REPORT_TO_INDEXER == "true" ]; then
+    if [ "$REPORT_NAME" == "opi-brc20-lc" ]; then
+        echo "REPORT_NAME is set to default. Please set a REPORT_NAME in the .env file to describe who is reporting."
+        exit 1
+    fi
+fi
+
 # Check for secure configurations
 if [ "$DB_PASSWD" == "postgres" ]; then
     echo "Please change the DB_PASSWD variable in the .env file to a secure password."
