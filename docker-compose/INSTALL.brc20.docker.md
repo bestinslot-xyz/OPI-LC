@@ -2,8 +2,10 @@
 
 You can use docker-compose to run the services. Make sure you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) installed and then run:
 
+> [!CAUTION]
+> Make sure to set the password environment variables in the `.env` file before running the containers such as `DB_PASSWD`, `BRC20_PROG_RPC_SERVER_PASSWORD`, and `BRC20_PROG_RPC_SERVER_USER`.
+
 ```bash
-export DB_PASSWD=your_strong_password # set a strong password for the postgres user
 docker compose up -d --build
 ```
 

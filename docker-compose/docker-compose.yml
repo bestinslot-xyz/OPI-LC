@@ -15,9 +15,14 @@ services:
       - .env
     environment:
       - BRC20_PROG_RPC_SERVER_URL=0.0.0.0:18545
+      - BRC20_PROG_RPC_SERVER_ENABLE_AUTH=true
+      - BRC20_PROG_RPC_SERVER_USER=${BRC20_PROG_RPC_SERVER_USER}
+      - BRC20_PROG_RPC_SERVER_PASSWORD=${BRC20_PROG_RPC_SERVER_PASSWORD}
       - BRC20_PROG_BALANCE_SERVER_URL=http://brc20-index:18546
       - BITCOIN_RPC_URL=http://brc20-index:18547
       - BRC20_PROG_DB_PATH=/var/lib/brc20-prog/data
+      - BITCOIN_RPC_NETWORK=${BITCOIN_RPC_NETWORK:-mainnet}
+      - EVM_RECORD_TRACES=true
     restart: unless-stopped
     # Expose JSON-RPC:
     ports:
@@ -30,32 +35,43 @@ services:
     depends_on:
       - db
       - brc20-prog
-    env_file:
-      - .env
     environment:
+      - OPERATION_MODE=light
+      - SAVE_LOGS=false # To keep the DB size smaller
       - DB_HOST=db
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWD=${DB_PASSWD}
       - DB_DATABASE=postgres
       - DB_SSL=false
+      - BRC20_PROG_ENABLED=true
       - BRC20_PROG_RPC_URL=http://brc20-prog:18545
+      - BRC20_PROG_RPC_USER=${BRC20_PROG_RPC_SERVER_USER?MUST BE SET}
+      - BRC20_PROG_RPC_PASSWORD=${BRC20_PROG_RPC_SERVER_PASSWORD?MUST BE SET}
       - BRC20_PROG_BALANCE_SERVER_ADDR=0.0.0.0:18546
+      - BITCOIN_RPC_CACHE_ENABLED=true
+      - BITCOIN_RPC_PROXY_SERVER_ENABLED=true
       - BITCOIN_RPC_PROXY_SERVER_ADDR=0.0.0.0:18547
+      - BITCOIN_RPC_NETWORK=${BITCOIN_RPC_NETWORK:-mainnet}
     restart: unless-stopped
 
   brc20-api:
     build: ./brc20-api
     depends_on:
       - db
-    env_file:
-      - .env
     environment:
       - DB_HOST=db
+      - DB_USER=postgres
+      - DB_DATABASE=postgres
       - DB_PASSWD=${DB_PASSWD}
       - DB_SSL=false
+      - DB_MAX_CONNECTIONS=10
       - API_HOST=0.0.0.0
       - API_PORT=${API_PORT:-8000}
+      - API_TRUSTED_PROXY_CNT=0
+      - RATE_LIMIT_ENABLE=true
+      - RATE_LIMIT_WINDOW_MS=1000
+      - RATE_LIMIT_MAX=100
     restart: unless-stopped
     ports:
       - "${API_PORT:-8000}:${API_PORT:-8000}"
