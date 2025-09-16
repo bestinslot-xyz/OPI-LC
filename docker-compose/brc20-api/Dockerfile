@@ -1,19 +1,26 @@
-FROM node:20-slim
+# ---- builder ----
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# install git for pulling the repo
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# clone the OPI repo
-RUN git clone https://github.com/bestinslot-xyz/OPI.git
+# clone repo
+RUN git clone --depth=1 https://github.com/bestinslot-xyz/OPI.git
 
 WORKDIR /app/OPI/modules/brc20_api
 
-# install deps
-RUN npm install
+# install only prod deps
+RUN npm install --omit=dev
 
-# expose the port api.js uses
-EXPOSE ${API_PORT:-8000}
+# ---- runtime ----
+FROM node:20-slim AS runtime
+WORKDIR /app
+
+# copy only built api + node_modules
+COPY --from=builder /app/OPI/modules/brc20_api /app
+
+# default port
+EXPOSE 8000
 
 CMD ["node", "api.js"]
