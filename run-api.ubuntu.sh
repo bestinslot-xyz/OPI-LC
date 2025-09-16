@@ -20,10 +20,9 @@ else
     git clone https://github.com/bestinslot-xyz/OPI.git
 fi
 
-cp .env OPI/modules/brc20_api/.env
-
 cd OPI/modules/brc20_api
 npm install
+cd ../../..
 
 # Start using pm2 just run node api.js
 if command -v pm2 &> /dev/null
@@ -36,7 +35,7 @@ then
     fi
 fi
 
-pm2 start api.js --name brc20-api
+pm2 start OPI/modules/brc20_api/api.js --name brc20-api
 pm2 save
 pm2 startup
 pm2 save
