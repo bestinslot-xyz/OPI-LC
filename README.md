@@ -81,6 +81,13 @@ Also do not forget to change `REPORT_NAME` to differentiate your node from other
 
 # Setup
 
+For a quick run (on Ubuntu), you can run the following commands:
+
+```bash
+bash run.ubuntu.sh # This runs BRC2.0 and the indexer
+bash run-api.ubuntu.sh # This runs the BRC20 API
+```
+
 For detailed installation guides:
 - BRC20
   - Ubuntu
