@@ -1,8 +1,14 @@
 #!/bin/bash
 set -eu
 
-sudo apt install -y npm nodejs
-sudo npm install -g pm2
+if command -v pm2 &> /dev/null
+then
+    echo "PM2 is already installed."
+else
+    echo "PM2 is not installed. Installing PM2..."
+    sudo apt install -y npm nodejs
+    sudo npm install -g pm2
+fi
 
 git clone https://github.com/bestinslot-xyz/OPI.git
 
