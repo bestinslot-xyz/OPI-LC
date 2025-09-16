@@ -1,3 +1,6 @@
+#!/bin/bash
+set -eu
+
 sudo apt install -y npm nodejs
 sudo npm install -g pm2
 
@@ -6,7 +9,18 @@ git clone https://github.com/bestinslot-xyz/OPI.git
 cd OPI/modules/brc20_api
 npm install
 
-pm2 start npm --name "brc20-api" -- start
+# Start using pm2 just run node api.js
+if command -v pm2 &> /dev/null
+then
+    PM2_PROCESSES=$(pm2 list | grep -c "brc20-api" || true)
+    if [ "$PM2_PROCESSES" -gt 0 ]; then
+        echo "Stopping existing BRC20 API process..."
+        pm2 stop brc20-api
+        pm2 delete brc20-api
+    fi
+fi
+
+pm2 start api.js --name brc20-api
 pm2 save
 pm2 startup
 pm2 save
