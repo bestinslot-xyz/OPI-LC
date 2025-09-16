@@ -18,4 +18,4 @@ docker system prune
 
 This will rebuild the images with the latest code from the repositories without losing your data, as the databases are stored in Docker volumes.
 
-Docker compose setup exposes the BRC-20 API on port 8000 by default, and BRC2.0 API on port 18545 (modify the `docker-compose.yml` file to change the ports).
+Docker compose setup exposes the BRC-20 API on port 8000 by default, and BRC2.0 API on port 18545 (modify the `docker-compose.yml` or `.env` file to change the ports).
