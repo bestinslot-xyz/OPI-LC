@@ -1,4 +1,12 @@
-# Detailed Installation Guide for OPI Light Client on Ubuntu 22.04
+# Detailed Installation Guide for OPI Light Client on Ubuntu
+
+This guide provides a setup for the OPI Light Client on Ubuntu. For a simple setup, you can run the provided script after modifying the `.env` file as needed:
+
+```sh
+bash run.ubuntu.sh
+```
+
+You'll need to start the BRC20 API manually afterwards if you want to use it.
 
 ## Installing Dependencies
 
@@ -37,23 +45,6 @@ sudo systemctl restart postgresql
 
 ```sh
 curl https://sh.rustup.rs -sSf | sh
-```
-
-### Installing NodeJS (Optional, for API and can be done later)
-
-These steps are following the guide at [here](https://github.com/nodesource/distributions).
-
-```sh
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-
-NODE_MAJOR=20
-echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-
-sudo apt-get update
-sudo apt-get install nodejs -y
 ```
 
 ## Setting up OPI v2 Light-Client
@@ -109,12 +100,58 @@ BRC20_PROG_RPC_SERVER_ENABLE_AUTH=false
 EVM_RECORD_TRACES=true
 ```
 
-### (Optional) Setting up BRC20 API
+## Running Light Client
+
+### Run BRC2.0 Programmable Module
+
+```sh
+cd brc20-programmable-module;
+cargo build --release;
+cd target/release;
+./brc20-prog -l info
+```
+
+### Run OPI v2 Light Client
+
+```sh
+cd OPI/modules/brc20_index;
+cargo build --release;
+cd target/release;
+./brc20-index -l info
+```
+
+### (Optional) Run API
+
+#### Install NodeJS
+
+These steps are following the guide at [here](https://github.com/nodesource/distributions).
+
+```sh
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+
+NODE_MAJOR=20
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+
+sudo apt-get update
+sudo apt-get install nodejs -y
+```
+
+#### Setup BRC20 API
+
+1) Clone if you haven't already
+
+```sh
+git clone https://github.com/bestinslot-xyz/OPI.git
+cd OPI/modules/brc20_api
+```
 
 1) Install node modules
 
 ```sh
-cd OPI/modules/brc20_api; npm install;
+npm install;
 ```
 
 2) Set up the environment for the API
@@ -139,29 +176,8 @@ RATE_LIMIT_WINDOW_MS=1000 # 1 second
 RATE_LIMIT_MAX=10 # limit each IP to 10 requests per windowMs
 ```
 
-## Running Light Client
-
-### Run BRC2.0 Programmable Module
+#### Start API
 
 ```sh
-cd brc20-programmable-module;
-cargo build --release --features=server;
-cd target/release;
-./server -l info
-```
-
-### Run OPI v2 Light Client
-
-```sh
-cd OPI/modules/brc20_index;
-cargo build --release;
-cd target/release;
-./brc20-index -l info
-```
-
-### (Optional) Run API
-
-```sh
-cd OPI/modules/brc20_api;
 node api.js
 ```
