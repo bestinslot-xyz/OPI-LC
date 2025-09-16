@@ -42,9 +42,6 @@ then
     sudo systemctl restart postgresql
 fi
 
-# Change postgres user password
-sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '$DB_PASSWD';"
-
 # Create database if not exists
 DB_EXIST=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_DATABASE'")
 if [ "$DB_EXIST" != "1" ]; then
@@ -79,10 +76,18 @@ else
     sudo apt install -y screen
 fi
 
+# Change postgres user password
+echo "Setting PostgreSQL password..."
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '$DB_PASSWD';"
+
+echo "Starting BRC20 Programmable Module and BRC20 Indexer in detached screen sessions..."
+
 screen -dmS brc20-prog bash -c 'while true; do brc20-prog -l info; sleep 1; done;'
 screen -dmS brc20-index bash -c 'while true; do brc20-index -l info; sleep 1; done;'
 
 echo "BRC20 Programmable Module and BRC20 Indexer are running in detached screen sessions."
+echo ""
 echo "To attach to the BRC20 Programmable Module session, use: screen -dr brc20-prog"
 echo "To attach to the BRC20 Indexer session, use: screen -dr brc20-index"
-echo "To list all screen sessions, use: screen -ls"
+echo ""
+echo "Setup complete!"
