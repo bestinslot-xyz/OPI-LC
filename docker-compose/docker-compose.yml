@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWD?MUST BE SET}
+      POSTGRES_PASSWORD: ${DB_PASSWD:?MUST BE SET}
       POSTGRES_DB: postgres
     volumes:
       - db_data:/var/lib/postgresql/data
