@@ -6,7 +6,18 @@ This guide provides a setup for the OPI Light Client on Ubuntu. For a simple set
 bash run.ubuntu.sh
 ```
 
-You'll need to start the BRC20 API manually afterwards if you want to use it.
+You'll need to start the BRC20 API afterwards if you want to use it:
+
+```sh
+bash run-api.ubuntu.sh
+```
+
+You can stop them by running:
+
+```sh
+bash stop.ubuntu.sh
+bash stop-api.ubuntu.sh
+```
 
 ## Installing Dependencies
 
