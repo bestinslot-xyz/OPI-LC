@@ -39,7 +39,7 @@ sudo systemctl restart postgresql
 curl https://sh.rustup.rs -sSf | sh
 ```
 
-### Installing NodeJS
+### Installing NodeJS (Optional, for API and can be done later)
 
 These steps are following the guide at [here](https://github.com/nodesource/distributions).
 
@@ -80,7 +80,7 @@ DB_PASSWD="<PASSWORD>"
 
 BRC20_PROG_ENABLED="true"
 BRC20_PROG_RPC_URL="http://127.0.0.1:18545"
-BRC20_PROG_BALANCE_SERVER_URL="127.0.0.1:18546"
+BRC20_PROG_BALANCE_SERVER_ADDR="127.0.0.1:18546"
 
 BITCOIN_RPC_CACHE_ENABLED="true"
 BITCOIN_RPC_PROXY_SERVER_ENABLED="true"
@@ -100,7 +100,7 @@ Bitcoin RPC needs to be pointed at the light client proxy for programmable modul
 
 ```sh
 BRC20_PROG_BALANCE_SERVER_URL=http://localhost:18546
-BITCOIN_RPC_URL=127.0.0.1:18547
+BITCOIN_RPC_URL=127.0.0.1:18547 # This points to the light client proxy server
 
 BRC20_PROG_RPC_SERVER_URL=127.0.0.1:18545
 BRC20_PROG_RPC_SERVER_ENABLE_AUTH=false
@@ -132,12 +132,11 @@ DB_MAX_CONNECTIONS=10
 
 API_HOST="127.0.0.1"
 API_PORT="8000"
-API_TRUSTED_PROXY_CNT="0"
+API_TRUSTED_PROXY_CNT="0" # number of trusted proxies in front of API, set to 1 if using nginx reverse proxy
 
-RATE_LIMIT_ENABLE="true"
-# 15 minutes: 15 * 60 * 1000 = 900000
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=100
+RATE_LIMIT_ENABLE="true" # enable rate limit
+RATE_LIMIT_WINDOW_MS=1000 # 1 second
+RATE_LIMIT_MAX=10 # limit each IP to 10 requests per windowMs
 ```
 
 ## Running Light Client
