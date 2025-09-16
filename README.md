@@ -74,28 +74,20 @@ traces_hash = sha256_hex(traces_str)
 cumulative_traces_hash = sha256_hex(last_cumulative_traces_hash + traces_hash)
 ```
 
-There is an optional block event hash reporting system pointed at https://api.opi.network/report_block. If you want to exclude your node from this, just change `REPORT_TO_INDEXER` variable in `brc20/psql/.env` and `brc20/sqlite/.env`.
+There is an optional block event hash reporting system pointed at https://api.opi.network/report_block. If you want to exclude your node from this, just change `REPORT_TO_INDEXER` variable in `.env` to false.
 Also do not forget to change `REPORT_NAME` to differentiate your node from others.
 
 **BRC-20 API** exposes activity on block (block events), balance of a wallet at the start of a given height, current balance of a wallet, block hash and cumulative hash at a given block and hash of all current balances. Also if optional extra tables are created, it exposes brc20 holders of a ticker, unused tx inscriptions of a ticker and unused tx inscriptions of a wallet.
 
 # Setup
 
-For a quick run (on Ubuntu), you can run the following commands:
+For installation guides:
 
-```bash
-bash run.ubuntu.sh # This runs BRC2.0 and the indexer
-bash run-api.ubuntu.sh # This runs the BRC20 API
-```
-
-For detailed installation guides:
 - BRC20
+  - Docker compose
+    - [en](docker/INSTALL.brc20.docker.md) 
   - Ubuntu
-      - [en](INSTALL.brc20.ubuntu.md)
-
-# Update
-
-- Stop all clients and apis
-- Update the OPI repo (`git pull`)
-- Update the BRC2.0 repo (`git pull`)
-- Re-run all clients and apis
+    - Quick setup
+      - [en](ubuntu/INSTALL.brc20.quick.md)
+    - Detailed
+      - [en](ubuntu/INSTALL.brc20.md)

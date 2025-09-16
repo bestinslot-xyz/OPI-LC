@@ -1,23 +1,6 @@
 # Detailed Installation Guide for OPI Light Client on Ubuntu
 
-This guide provides a setup for the OPI Light Client on Ubuntu. For a simple setup, you can run the provided script after modifying the `.env` file as needed:
-
-```sh
-bash run.ubuntu.sh
-```
-
-You'll need to start the BRC20 API afterwards if you want to use it:
-
-```sh
-bash run-api.ubuntu.sh
-```
-
-You can stop them by running:
-
-```sh
-bash stop.ubuntu.sh
-bash stop-api.ubuntu.sh
-```
+This guide provides a setup for the OPI Light Client on Ubuntu. It includes the BRC2.0 programmable module and the BRC20 indexer, along with an optional API to query BRC-20 data.
 
 ## Installing Dependencies
 
