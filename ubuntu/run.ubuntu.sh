@@ -56,7 +56,6 @@ if [ "$DB_EXIST" != "1" ]; then
     sudo -u postgres psql -c "CREATE DATABASE $DB_DATABASE;"
 fi
 
-
 # Install cargo if not installed
 if ! command -v cargo &> /dev/null
 then
@@ -83,9 +82,10 @@ else
     sudo apt install -y screen
 fi
 
-# Change postgres user password
+# Change postgres user password and grant all privileges on the database
 echo "Setting PostgreSQL password..."
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '$DB_PASSWD';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_DATABASE TO postgres;"
 
 echo "Starting BRC20 Programmable Module and BRC20 Indexer in detached screen sessions..."
 
