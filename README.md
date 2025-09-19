@@ -85,7 +85,7 @@ For installation guides:
 
 - BRC20
   - Docker compose
-    - [en](docker/INSTALL.brc20.docker.md) 
+    - [en](docker-compose/INSTALL.brc20.docker.md) 
   - Ubuntu
     - Quick setup
       - [en](ubuntu/INSTALL.brc20.quick.md)
