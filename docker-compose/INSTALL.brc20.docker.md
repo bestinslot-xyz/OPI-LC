@@ -9,13 +9,19 @@ You can use docker-compose to run the services. Make sure you have [Docker](http
 docker compose up -d --build
 ```
 
-To update the services and fetch the latest code, you'll need to recreate the containers, not just restart them. First, stop and remove the containers, then run the `up` command above again:
+To update the services and fetch the latest code, you'll need to re-run the command above, which should pull the latest code and rebuild them.
+
+If you want to ensure a clean update, you can stop and remove the containers and prune unused Docker objects with:
 
 ```bash
 docker compose down
 docker system prune
 ```
 
-This will rebuild the images with the latest code from the repositories without losing your data, as the databases are stored in Docker volumes.
+This will rebuild the images with the latest code from the repositories without losing your data, as the databases are stored in Docker volumes. To clean up unused volumes, you can run:
+
+```bash
+docker volume prune
+```
 
 Docker compose setup exposes the BRC-20 API on port 8000 by default, and BRC2.0 API on port 18545 (modify the `docker-compose.yml` or `.env` file to change the ports).
