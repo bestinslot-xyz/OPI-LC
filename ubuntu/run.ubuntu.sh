@@ -26,7 +26,7 @@ if ! [[ $BRC20_PROG_RPC_SERVER_URL == "127.0.0.1"* ]]; then
         echo "You have not enabled authentication for the RPC server, and the server is accessible externally. Please change BRC20_PROG_RPC_SERVER_ENABLE_AUTH to true in the .env file."
         exit 1
     fi
-    if [ $BRC20_PROG_RPC_SERVER_USER == "brc20prog" ] || [ $BRC20_PROG_RPC_SERVER_PASSWD == "brc20prog" ]; then
+    if [ $BRC20_PROG_RPC_SERVER_USER == "brc20prog" ] || [ $BRC20_PROG_RPC_SERVER_PASSWORD == "brc20prog" ]; then
         echo "You are using the default username or password for the RPC server, and the server is accessible externally. Please change BRC20_PROG_RPC_SERVER_USER and BRC20_PROG_RPC_SERVER_PASSWD to secure values in the .env file."
         exit 1
     fi
