@@ -89,5 +89,8 @@ For installation guides:
   - Ubuntu
     - Quick setup
       - [en](ubuntu/INSTALL.brc20.quick.md)
-    - Detailed
+    - Detailed - You likely won't need this, unless you want to customize something
       - [en](ubuntu/INSTALL.brc20.md)
+
+> [!NOTE]
+> Ubuntu version always runs tip of the tree, so it has the latest features and bug fixes. Docker version tracks an older commit to avoid breaking changes, so it may miss some bug fixes, let us know so we can address it.
