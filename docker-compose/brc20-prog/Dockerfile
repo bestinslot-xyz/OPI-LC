@@ -6,7 +6,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git --tag v0.12.0
+RUN cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git --tag v0.13.0
 
 # ---- runtime ----
 FROM debian:bookworm-slim AS runtime
