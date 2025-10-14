@@ -66,7 +66,9 @@ then
 fi
 
 # Install dependencies
+export CARGO_TARGET_DIR="$HOME/.cargo/target/OPI"
 cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index
+export CARGO_TARGET_DIR="$HOME/.cargo/target/brc20-programmable-module"
 cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git
 
 # check if screen is running and kill existing sessions
