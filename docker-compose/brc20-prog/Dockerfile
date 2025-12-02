@@ -1,12 +1,12 @@
 # ---- builder ----
-FROM rust:1.87-slim AS builder
+FROM rust:1.88-slim AS builder
 
 RUN apt-get update && \
     apt-get install -y clang pkg-config libssl-dev && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git --tag v0.15.3
+RUN cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git --tag v0.15.5
 
 # ---- runtime ----
 FROM debian:bookworm-slim AS runtime
