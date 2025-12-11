@@ -32,6 +32,15 @@ if ! [[ $BRC20_PROG_RPC_SERVER_URL == "127.0.0.1"* ]]; then
     fi
 fi
 
+if ! [ $BRC20_PROG_RPC_SERVER_USER == $BRC20_PROG_RPC_USER ]; then
+    echo "BRC20_PROG_RPC_SERVER_USER and BRC20_PROG_RPC_USER must be the same for authentication to work. Please fix this in the .env file."
+    exit 1
+fi
+if ! [ $BRC20_PROG_RPC_SERVER_PASSWORD == $BRC20_PROG_RPC_PASSWORD ]; then
+    echo "BRC20_PROG_RPC_SERVER_PASSWORD and BRC20_PROG_RPC_PASSWORD must be the same for authentication to work. Please fix this in the .env file."
+    exit 1
+fi
+
 # Install postgres if not installed
 if ! command -v psql &> /dev/null
 then
