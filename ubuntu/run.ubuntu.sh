@@ -65,6 +65,13 @@ then
     . $HOME/.cargo/env
 fi
 
+if ! rustup toolchain list | grep -q "stable"; then
+    rustup toolchain install stable
+fi
+
+rustup default stable
+rustup update stable
+
 # Install dependencies
 export CARGO_TARGET_DIR="$HOME/.cargo/target/OPI"
 cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index
