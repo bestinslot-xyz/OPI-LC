@@ -8,7 +8,7 @@ RUN apt-get update && \
 WORKDIR /app
 
 # build only brc20-index from the repo
-RUN cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index --tag v2.0.6
+RUN cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index --tag v2.0.8
 
 # ---- runtime ----
 FROM debian:bookworm-slim
