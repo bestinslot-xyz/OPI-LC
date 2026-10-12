@@ -81,11 +81,13 @@ fi
 rustup default stable
 rustup update stable
 
-# Install dependencies
+# Install dependencies, pinned to the release tags this setup is validated against
+BRC20_INDEX_VERSION="v2.0.13"
+BRC20_PROG_VERSION="v0.16.1"
 export CARGO_TARGET_DIR="$HOME/.cargo/target/OPI"
-cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index
+cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index --tag "$BRC20_INDEX_VERSION"
 export CARGO_TARGET_DIR="$HOME/.cargo/target/brc20-programmable-module"
-cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git
+cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git --tag "$BRC20_PROG_VERSION"
 
 # check if screen is running and kill existing sessions
 if command -v screen &> /dev/null
