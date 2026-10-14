@@ -89,7 +89,7 @@ cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-ind
 export CARGO_TARGET_DIR="$HOME/.cargo/target/brc20-programmable-module"
 cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git --tag "$BRC20_PROG_VERSION"
 
-# check if screen is running and kill existing sessions
+# Stop screen sessions left by setups that ran both processes under screen
 if command -v screen &> /dev/null
 then
     SCREEN_SESSIONS=$(screen -ls | grep -c "brc20-prog\|brc20-index" || true)
@@ -97,9 +97,6 @@ then
         echo "Killing existing screen sessions..."
         screen -ls | grep -E "brc20-prog|brc20-index" | awk '{print $1}' | xargs -I {} screen -S {} -X quit
     fi
-else
-    echo "Screen could not be found, installing..."
-    sudo apt install -y screen
 fi
 
 # Change postgres user password and grant all privileges on the database
@@ -107,14 +104,63 @@ echo "Setting PostgreSQL password..."
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '$DB_PASSWD';"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_DATABASE TO postgres;"
 
-echo "Starting BRC20 Programmable Module and BRC20 Indexer in detached screen sessions..."
+# Run both processes as systemd services: they restart on failure and start on boot.
+# Each service loads .env from this directory the same way this script does.
+SERVICE_USER=$(id -un)
+SERVICE_DIR=$(pwd)
+BRC20_PROG_BIN=$(command -v brc20-prog || true)
+BRC20_INDEX_BIN=$(command -v brc20-index || true)
+if [ -z "$BRC20_PROG_BIN" ] || [ -z "$BRC20_INDEX_BIN" ]; then
+    echo "brc20-prog or brc20-index is not on PATH after cargo install. Add \$HOME/.cargo/bin to PATH and run this script again."
+    exit 1
+fi
 
-screen -dmS brc20-prog bash -c 'while true; do brc20-prog -l info; sleep 1; done;'
-screen -dmS brc20-index bash -c 'while true; do brc20-index -l info; sleep 1; done;'
+echo "Installing systemd services brc20-prog and brc20-index..."
 
-echo "BRC20 Programmable Module and BRC20 Indexer are running in detached screen sessions."
+sudo tee /etc/systemd/system/brc20-prog.service > /dev/null <<EOF
+[Unit]
+Description=BRC20 Programmable Module (OPI light client)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=$SERVICE_USER
+WorkingDirectory=$SERVICE_DIR
+ExecStart=/bin/bash -c 'set -a; . ./.env; set +a; exec $BRC20_PROG_BIN -l info'
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo tee /etc/systemd/system/brc20-index.service > /dev/null <<EOF
+[Unit]
+Description=BRC20 Indexer (OPI light client)
+Wants=network-online.target brc20-prog.service
+After=network-online.target postgresql.service brc20-prog.service
+
+[Service]
+User=$SERVICE_USER
+WorkingDirectory=$SERVICE_DIR
+ExecStart=/bin/bash -c 'set -a; . ./.env; set +a; exec $BRC20_INDEX_BIN -l info'
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable brc20-prog brc20-index
+sudo systemctl restart brc20-prog brc20-index
+
+echo "BRC20 Programmable Module and BRC20 Indexer are running as systemd services."
 echo ""
-echo "To attach to the BRC20 Programmable Module session, use: screen -dr brc20-prog"
-echo "To attach to the BRC20 Indexer session, use: screen -dr brc20-index"
+echo "To check their status, use: systemctl status brc20-prog brc20-index"
+echo "To follow the BRC20 Programmable Module logs, use: journalctl -u brc20-prog -f"
+echo "To follow the BRC20 Indexer logs, use: journalctl -u brc20-index -f"
 echo ""
 echo "Setup complete!"
