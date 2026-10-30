@@ -6,8 +6,7 @@ OPI-LC supports **PostgreSQL** for better performance.
 
 Currently OPI-LC only supports **BRC-20**, we'll add new modules over time. Pull Requests are welcomed for other meta-protocols.
 
-> [!WARNING]
-> OPI-LC implementation is now merged with the better performing OPI v2, and BRC-20 indexer is rewritten to support a light client operation mode, and lives in [bestinslot-xyz/OPI repository](https://github.com/bestinslot-xyz/OPI). Read instructions below on how to install/run.
+This repository holds the install guides and configuration. The light client itself is `opi-indexer` from the [bestinslot-xyz/OPI repository](https://github.com/bestinslot-xyz/OPI): one binary that runs the BRC-20 light client (`opi-indexer brc20 light`) with the BRC2.0 programmable module in process, and serves the OPI API (`opi-indexer api`). A light client needs no bitcoind: the BRC2.0 engine's Bitcoin lookups come from data the OPI network's full nodes publish.
 
 ## BRC-20 Light Client / API
 
@@ -17,67 +16,13 @@ In addition to indexing all events, it calculates a block hash and cumulative ha
 
 It also calculates a hash of all BRC-20 programmable module traces in the current block, and a cumulative hash of the traces.
 
-Here's the pseudocode for hash calculation:
+The [BRC-20 Indexer section of the OPI README](https://github.com/bestinslot-xyz/OPI/tree/opi-monolith#brc-20-indexer) gives the pseudocode for both hash calculations.
 
-```python
-## Calculation starts at block 767430 which is the first inscription block
+There is an optional block event hash reporting system pointed at https://api.opi.network/report_block. It is off in this repository's `.env` files: set `REPORT_TO_INDEXER` to true to report, and change `REPORT_NAME` to differentiate your node from others.
 
-EVENT_SEPARATOR = '|'
-## max_supply, limit_per_mint, amount decimal count is the same as ticker's decimals (no trailing dot if decimals is 0)
-## ticker_lowercase = lower(ticker)
-## ticker_original is the ticker on inscription
-for event in block_events:
-  if event is 'predeploy-inscribe':
-    block_str += 'predeploy-inscribe;<inscr_id>;<predeployer_pkscript>;<hash>;<block_height>' + EVENT_SEPARATOR
-  if event is 'deploy-inscribe':
-    block_str += 'deploy-inscribe;<inscr_id>;<deployer_pkscript>;<ticker_lowercase>;<ticker_original>;<max_supply>;<decimals>;<limit_per_mint>;<is_self_mint("true" or "false")>' + EVENT_SEPARATOR
-  if event is 'mint-inscribe':
-    block_str += 'mint-inscribe;<inscr_id>;<minter_pkscript>;<ticker_lowercase>;<ticker_original>;<amount>;<parent_id("" if null)>' + EVENT_SEPARATOR
-  if event is 'transfer-inscribe':
-    block_str += 'transfer-inscribe;<inscr_id>;<source_pkscript>;<ticker_lowercase>;<ticker_original>;<amount>' + EVENT_SEPARATOR
-  if event is 'transfer-transfer':
-    ## if sent as fee, sent_pkscript is empty
-    block_str += 'transfer-transfer;<inscr_id>;<source_pkscript>;<sent_pkscript>;<ticker_lowercase>;<ticker_original>;<amount>' + EVENT_SEPARATOR
-  if event is 'brc20prog-deploy-inscribe':
-    block_str += 'brc20prog-deploy-inscribe;<inscr_id>;<source_pkscript>;<data>;<base64_data>' + EVENT_SEPARATOR
-  if event is 'brc20prog-deploy-transfer':
-    block_str += 'brc20prog-deploy-transfer;<inscr_id>;<source_pkscript>;<spent_pkscript>;<data>;<base64_data>;<byte_len>' + EVENT_SEPARATOR
-  if event is 'brc20prog-call-inscribe':
-    block_str += '<inscr_id>;<source_pkscript>;<contract_address>;<contract_inscription_id>;<data>;<base64_data>' + EVENT_SEPARATOR
-  if event is 'brc20prog-call-transfer':
-    block_str += '<inscr_id>;<source_pkscript>;<spent_pkscript>;<contract_address>;<contract_inscription_id>;<data>;<base64_data>' + EVENT_SEPARATOR
-  if event is 'brc20prog-transact-inscribe':
-    block_str += '<inscr_id>;<source_pkscript>;<data>;<base64_data>' + EVENT_SEPARATOR
-  if event is 'brc20prog-transact-transfer':
-    block_str += '<inscr_id>;<source_pkscript>;<spent_pkscript>;<data>;<base64_data>;<byte_len>' + EVENT_SEPARATOR
-  if event is 'brc20prog-withdraw-inscribe':
-    block_str += '<inscr_id>;<source_pkscript>;<ticker_lowercase>;<ticker_original>;<amount>' + EVENT_SEPARATOR
-  if event is 'brc20prog-withdraw-transfer':
-    block_str += '<inscr_id>;<source_pkscript>;<spent_pkscript>;<ticker_lowercase>;<ticker_original>;<amount>' + EVENT_SEPARATOR
+**OPI API** exposes activity on block (block events), balance of a wallet at the start of a given height, current balance of a wallet, block hash and cumulative hash at a given block, hash of all current balances, brc20 holders of a ticker, and unused transfer inscriptions of a ticker or a wallet. It also serves ticker, holder, wallet balance and event-feed routes, and a push feed of block events; the [API section of the OPI README](https://github.com/bestinslot-xyz/OPI/tree/opi-monolith#api) lists every route.
 
-if block_str.last is EVENT_SEPARATOR: block_str.remove_last()
-block_hash = sha256_hex(block_str)
-## for first block last_cumulative_hash is empty
-cumulative_hash = sha256_hex(last_cumulative_hash + block_hash)
-```
-
-To calculate the trace hashes in a stable way, the JSON string representation of an EVM trace uses the suggested schema at [RFC 8785](https://datatracker.ietf.org/doc/html/rfc8785). It has implementations in both [Rust](https://docs.rs/serde_json_canonicalizer/latest/serde_json_canonicalizer/) and [Python](https://pypi.org/project/rfc8785/):
-
-```python
-EVENT_SEPARATOR = '|'
-traces_str = ""
-for tx in sorted(block_txes, key=lambda tx: tx['transactionIndex']):
-  trace_str = rfc8785.dumps(brc20_prog_client.debug_traceTransaction(tx['hash']).result)
-  traces_str += trace_str + EVENT_SEPARATOR
-if traces_str.last is EVENT_SEPARATOR: traces_str.remove_last()
-traces_hash = sha256_hex(traces_str)
-cumulative_traces_hash = sha256_hex(last_cumulative_traces_hash + traces_hash)
-```
-
-There is an optional block event hash reporting system pointed at https://api.opi.network/report_block. If you want to exclude your node from this, just change `REPORT_TO_INDEXER` variable in `.env` to false.
-Also do not forget to change `REPORT_NAME` to differentiate your node from others.
-
-**BRC-20 API** exposes activity on block (block events), balance of a wallet at the start of a given height, current balance of a wallet, block hash and cumulative hash at a given block and hash of all current balances. Also if optional extra tables are created, it exposes brc20 holders of a ticker, unused tx inscriptions of a ticker and unused tx inscriptions of a wallet.
+The light client also serves the BRC2.0 engine's JSON-RPC (`eth_call`, `debug_traceTransaction`) on `127.0.0.1:18545`. It takes no credentials, so keep it on loopback or firewall it.
 
 # Setup
 
@@ -85,12 +30,14 @@ For installation guides:
 
 - BRC20
   - Docker compose
-    - [en](docker-compose/INSTALL.brc20.docker.md) 
+    - [en](docker-compose/INSTALL.brc20.docker.md)
   - Ubuntu
     - Quick setup
       - [en](ubuntu/INSTALL.brc20.quick.md)
     - Detailed - You likely won't need this, unless you want to customize something
       - [en](ubuntu/INSTALL.brc20.md)
 
+Hosts that ran the earlier `brc20-index`, `brc20-prog` and `brc20-api` setup switch in place, keeping their database and BRC2.0 engine data; each guide has a section for it.
+
 > [!NOTE]
-> Ubuntu version always runs tip of the tree, so it has the latest features and bug fixes. Docker version tracks an older commit to avoid breaking changes, so it may miss some bug fixes, let us know so we can address it.
+> Both setups build `opi-indexer` from the OPI repository's `opi-monolith` branch. The Docker setup takes the ref from `OPI_REF` in its `.env`, so it can stay on a release tag.

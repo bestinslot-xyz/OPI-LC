@@ -1,6 +1,6 @@
 # Detailed Installation Guide for OPI Light Client on Ubuntu
 
-This guide provides a setup for the OPI Light Client on Ubuntu. It includes the BRC2.0 programmable module and the BRC20 indexer, along with an optional API to query BRC-20 data.
+This guide sets up the OPI Light Client on Ubuntu by hand. One binary, `opi-indexer` from the [OPI repository](https://github.com/bestinslot-xyz/OPI), runs the BRC-20 light client with the BRC2.0 programmable module in process, and serves the optional OPI API. There is no bitcoind: the light client takes the OPI network's verified block data and recomputes every hash itself.
 
 ## Installing Dependencies
 
@@ -33,29 +33,37 @@ sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '<password>';"
 sudo systemctl restart postgresql
 ```
 
-### Installing Cargo
+### Installing build tools and Cargo
 
-1) Install cargo if you don't have it. [guide](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+1) The BRC2.0 engine's RocksDB compiles C++ and runs bindgen:
+
+```sh
+sudo apt install -y build-essential clang libclang-dev cmake pkg-config curl
+```
+
+2) Install cargo if you don't have it ([guide](https://doc.rust-lang.org/cargo/getting-started/installation.html)), and keep the stable toolchain current: `opi-indexer` needs Rust 1.95 or later.
 
 ```sh
 curl https://sh.rustup.rs -sSf | sh
+rustup update stable
 ```
 
-## Setting up OPI v2 Light-Client
-
-1) Clone the OPI repository
+## Installing opi-indexer
 
 ```sh
-git clone https://github.com/bestinslot-xyz/OPI.git
-cd OPI/modules/brc20_index
+SQLX_OFFLINE=true cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git --branch opi-monolith opi-indexer
 ```
 
-2) Set up environment for BRC20 indexer
+## Configuration
 
-A light client setup requires `OPERATION_MODE=light`, here's a sample `.env` file, it also runs a Bitcoin RPC proxy server to load and forward events from OPI in absence of a full node:
+`opi-indexer` reads `.env` from its working directory. The `.env` in this directory is a light-client setup; set at least `DB_PASSWD` and `NETWORK_TYPE`. The keys a light client needs:
 
 ```sh
 OPERATION_MODE="light"
+NETWORK_TYPE="mainnet" # or signet
+
+# The BRC2.0 engine's Bitcoin lookups come from this cache, filled from the OPI network
+BITCOIN_RPC_CACHE_ENABLED="true"
 
 DB_USER="postgres"
 DB_HOST="localhost"
@@ -63,115 +71,38 @@ DB_PORT="5432"
 DB_DATABASE="postgres"
 DB_PASSWD="<PASSWORD>"
 
-BRC20_PROG_ENABLED="true"
-BRC20_PROG_RPC_URL="http://127.0.0.1:18545"
-BRC20_PROG_BALANCE_SERVER_ADDR="127.0.0.1:18546"
-
-BITCOIN_RPC_CACHE_ENABLED="true"
-BITCOIN_RPC_PROXY_SERVER_ENABLED="true"
-BITCOIN_RPC_PROXY_SERVER_URL="127.0.0.1:18547"
+# The engine's data directory
+BRC20_PROG_DB_PATH="data/brc20-prog"
+# The engine's public JSON-RPC; it takes no credentials, so keep it on loopback or firewall it
+BRC20_PROG_RPC_SERVER_URL="127.0.0.1:18545"
 ```
 
-3) Clone the BRC2.0 repository
+The API reads the same `DB_*` keys, plus `API_HOST`, `API_PORT`, `API_TRUSTED_PROXY_CNT` and `RATE_LIMIT_*`. The OPI repository's `.env_sample` describes every key.
 
-```sh
-git clone https://github.com/bestinslot-xyz/brc20-programmable-module.git
-cd brc20-programmable-module
-```
-
-4) Set up the environment for BRC2.0 programmable module
-
-Bitcoin RPC needs to be pointed at the light client proxy for programmable module, as there's no real full node. Here's a sample `.env` file for BRC2.0 programmable module:
-
-```sh
-BRC20_PROG_BALANCE_SERVER_URL=http://localhost:18546
-BITCOIN_RPC_URL=127.0.0.1:18547 # This points to the light client proxy server
-
-BRC20_PROG_RPC_SERVER_URL=127.0.0.1:18545
-BRC20_PROG_RPC_SERVER_ENABLE_AUTH=false
-
-# Required for trace hash calculation
-EVM_RECORD_TRACES=true
-```
+Keys of the earlier setup that `opi-indexer` ignores: `BRC20_PROG_ENABLED`, `BRC20_PROG_RPC_URL`, `BRC20_PROG_RPC_USER`, `BRC20_PROG_RPC_PASSWORD`, `BRC20_PROG_BALANCE_SERVER_ADDR`, `BRC20_PROG_BALANCE_SERVER_URL`, `BITCOIN_RPC_PROXY_SERVER_ENABLED`, `BITCOIN_RPC_PROXY_SERVER_ADDR`, `BITCOIN_RPC_URL` and `BITCOIN_RPC_NETWORK`. `BRC20_PROG_RPC_SERVER_ENABLE_AUTH`, `BRC20_PROG_RPC_SERVER_USER` and `BRC20_PROG_RPC_SERVER_PASSWORD` do not apply to the engine's JSON-RPC, and `BRC20_PROG_RPC_SERVER_ENABLE_AUTH=true` without a user and password stops the engine from opening, so remove them.
 
 ## Running Light Client
 
-### Run BRC2.0 Programmable Module
-
 ```sh
-cd brc20-programmable-module;
-cargo build --release;
-cd target/release;
-./brc20-prog -l info
+opi-indexer brc20 light
 ```
 
-### Run OPI v2 Light Client
+It stops on SIGINT or SIGTERM after its current block. Run it under a supervisor such as systemd that restarts it: `run.ubuntu.sh` installs the `opi-light` service for this.
 
-```sh
-cd OPI/modules/brc20_index;
-cargo build --release;
-cd target/release;
-./brc20-index -l info
-```
+Moving from the separate `brc20-index` and `brc20-prog` processes: stop both, keep `DB_*` and `BRC20_PROG_DB_PATH` pointed at their database and engine data, and start `opi-indexer brc20 light`. It resumes from the last block. On its first start it checks the current-balance tables once, and rebuilds them when an older version left them partly built. When the engine data is behind the database, it rolls back to the engine's height and replays those blocks with every hash verified.
 
 ### (Optional) Run API
 
-#### Install NodeJS
-
-These steps are following the guide at [here](https://github.com/nodesource/distributions).
-
 ```sh
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-
-NODE_MAJOR=20
-echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-
-sudo apt-get update
-sudo apt-get install nodejs -y
+opi-indexer api
 ```
 
-#### Setup BRC20 API
+It serves the OPI API on `API_HOST:API_PORT`: the BRC-20 routes of the earlier JS API, plus ticker, holder, wallet and event-feed routes. `run-api.ubuntu.sh` installs the `opi-api` service for it.
 
-1) Clone if you haven't already
-
-```sh
-git clone https://github.com/bestinslot-xyz/OPI.git
-cd OPI/modules/brc20_api
-```
-
-1) Install node modules
+## Checking
 
 ```sh
-npm install;
+curl -s localhost:8000/v1/brc20/block_height
 ```
 
-2) Set up the environment for the API
-
-Here's a sample `.env` file for the API:
-
-```sh
-DB_USER="postgres"
-DB_HOST="localhost"
-DB_PORT="5432"
-DB_DATABASE="postgres"
-DB_PASSWD="<PASSWORD>"
-DB_SSL="true"
-DB_MAX_CONNECTIONS=10
-
-API_HOST="127.0.0.1"
-API_PORT="8000"
-API_TRUSTED_PROXY_CNT="0" # number of trusted proxies in front of API, set to 1 if using nginx reverse proxy
-
-RATE_LIMIT_ENABLE="true" # enable rate limit
-RATE_LIMIT_WINDOW_MS=1000 # 1 second
-RATE_LIMIT_MAX=10 # limit each IP to 10 requests per windowMs
-```
-
-#### Start API
-
-```sh
-node api.js
-```
+The height follows the OPI network's best verified block.

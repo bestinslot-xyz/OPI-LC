@@ -1,49 +1,57 @@
 #!/bin/bash
 set -eu
 
-if command -v pm2 &> /dev/null
-then
-    echo "PM2 is already installed."
-else
-    echo "PM2 is not installed. Installing PM2..."
-    sudo apt install -y npm nodejs
-    sudo npm install -g pm2
+# run.ubuntu.sh installs opi-indexer, which also serves the API
+OPI_INDEXER_BIN=$(command -v opi-indexer || true)
+if [ -z "$OPI_INDEXER_BIN" ]; then
+    echo "opi-indexer is not on PATH. Run run.ubuntu.sh first, or add \$HOME/.cargo/bin to PATH."
+    exit 1
 fi
 
-if [ -d "OPI" ]; then
-    echo "OPI directory already exists. Pulling the latest changes..."
-    cd OPI
-    git pull
-    cd ..
-else
-    echo "Cloning OPI repository..."
-    git clone https://github.com/bestinslot-xyz/OPI.git
-fi
-
-cd OPI/modules/brc20_api
-npm install
-cd ../../..
-
-# Start using pm2 just run node api.js
+# Stop the JS brc20-api of the earlier setup: opi-indexer api replaces it on the same port
 if command -v pm2 &> /dev/null
 then
     PM2_PROCESSES=$(pm2 list | grep -c "brc20-api" || true)
     if [ "$PM2_PROCESSES" -gt 0 ]; then
-        echo "Stopping existing BRC20 API process..."
+        echo "Removing the brc20-api PM2 process, which opi-api replaces..."
         pm2 stop brc20-api
         pm2 delete brc20-api
+        pm2 save
     fi
 fi
 
-pm2 start OPI/modules/brc20_api/api.js --name brc20-api
-pm2 save
-pm2 startup
-pm2 save
-echo "BRC20 API is running under PM2 process manager."
-echo "To manage the BRC20 API process, use the following commands:"
-echo "  pm2 status               # Check the status of all PM2 processes"
-echo "  pm2 restart brc20-api    # Restart the BRC20 API process"
-echo "  pm2 stop brc20-api       # Stop the BRC20 API process"
-echo "  pm2 logs brc20-api       # View logs for the BRC20 API process"
-echo "  pm2 delete brc20-api     # Delete the BRC20 API process from PM2"
+# Run the API as a systemd service: it restarts on failure and starts on boot.
+# The service loads .env from this directory.
+SERVICE_USER=$(id -un)
+SERVICE_DIR=$(pwd)
+
+echo "Installing systemd service opi-api..."
+
+sudo tee /etc/systemd/system/opi-api.service > /dev/null <<EOF
+[Unit]
+Description=OPI API (opi-indexer api)
+Wants=network-online.target
+After=network-online.target postgresql.service
+
+[Service]
+User=$SERVICE_USER
+WorkingDirectory=$SERVICE_DIR
+ExecStart=/bin/bash -c 'set -a; . ./.env; set +a; exec $OPI_INDEXER_BIN api'
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable opi-api
+sudo systemctl restart opi-api
+
+echo "The OPI API is running as the systemd service opi-api."
+echo ""
+echo "To check its status, use: systemctl status opi-api"
+echo "To follow its logs, use: journalctl -u opi-api -f"
+echo ""
 echo "Setup complete!"

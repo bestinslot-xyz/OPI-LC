@@ -8,37 +8,34 @@ set +o allexport
 # Exit on error, undefined variable
 set -eu
 
-if [ $REPORT_TO_INDEXER == "true" ]; then
-    if [ "$REPORT_NAME" == "opi-brc20-lc" ]; then
+# The OPI repository branch opi-indexer is installed from
+OPI_BRANCH="opi-monolith"
+
+if [ "${REPORT_TO_INDEXER:-}" == "true" ]; then
+    if [ "${REPORT_NAME:-}" == "opi-brc20-lc" ]; then
         echo "REPORT_NAME is set to default. Please set a REPORT_NAME in the .env file to describe who is reporting."
         exit 1
     fi
 fi
 
 # Check for secure configurations
-if [ "$DB_PASSWD" == "postgres" ]; then
+if [ "${DB_PASSWD:-}" == "postgres" ]; then
     echo "Please change the DB_PASSWD variable in the .env file to a secure password."
     exit 1
 fi
 
-if ! [[ $BRC20_PROG_RPC_SERVER_URL == "127.0.0.1"* ]]; then
-    if ! [ $BRC20_PROG_RPC_SERVER_ENABLE_AUTH == "true" ]; then
-        echo "You have not enabled authentication for the RPC server, and the server is accessible externally. Please change BRC20_PROG_RPC_SERVER_ENABLE_AUTH to true in the .env file."
-        exit 1
-    fi
-    if [ $BRC20_PROG_RPC_SERVER_USER == "brc20prog" ] || [ $BRC20_PROG_RPC_SERVER_PASSWORD == "brc20prog" ]; then
-        echo "You are using the default username or password for the RPC server, and the server is accessible externally. Please change BRC20_PROG_RPC_SERVER_USER and BRC20_PROG_RPC_SERVER_PASSWD to secure values in the .env file."
-        exit 1
-    fi
+if [ "${OPERATION_MODE:-}" != "light" ]; then
+    echo "OPERATION_MODE must be light in the .env file."
+    exit 1
 fi
 
-if ! [ $BRC20_PROG_RPC_SERVER_USER == $BRC20_PROG_RPC_USER ]; then
-    echo "BRC20_PROG_RPC_SERVER_USER and BRC20_PROG_RPC_USER must be the same for authentication to work. Please fix this in the .env file."
+if [ -z "${BRC20_PROG_DB_PATH:-}" ]; then
+    echo "Please set BRC20_PROG_DB_PATH in the .env file to the BRC2.0 engine's data directory."
     exit 1
 fi
-if ! [ $BRC20_PROG_RPC_SERVER_PASSWORD == $BRC20_PROG_RPC_PASSWORD ]; then
-    echo "BRC20_PROG_RPC_SERVER_PASSWORD and BRC20_PROG_RPC_PASSWORD must be the same for authentication to work. Please fix this in the .env file."
-    exit 1
+
+if ! [[ "${BRC20_PROG_RPC_SERVER_URL:-127.0.0.1:18545}" == "127.0.0.1"* ]]; then
+    echo "Warning: the BRC2.0 JSON-RPC at $BRC20_PROG_RPC_SERVER_URL takes no credentials and is reachable from other hosts. Firewall it, or set BRC20_PROG_RPC_SERVER_URL to 127.0.0.1:18545."
 fi
 
 # Install postgres if not installed
@@ -65,10 +62,12 @@ if [ "$DB_EXIST" != "1" ]; then
     sudo -u postgres psql -c "CREATE DATABASE $DB_DATABASE;"
 fi
 
+# Build dependencies: the BRC2.0 engine's RocksDB compiles C++ and runs bindgen
+sudo apt install -y build-essential clang libclang-dev cmake pkg-config curl
+
 # Install cargo if not installed
 if ! command -v cargo &> /dev/null
 then
-    sudo apt install -y clang curl pkg-config libssl-dev
     echo "Cargo could not be found, installing..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     . $HOME/.cargo/env
@@ -81,13 +80,19 @@ fi
 rustup default stable
 rustup update stable
 
-# Install dependencies, pinned to the release tags this setup is validated against
-BRC20_INDEX_VERSION="v2.0.13"
-BRC20_PROG_VERSION="v0.16.1"
+# Install opi-indexer, which runs the light client, the BRC2.0 engine and the API
 export CARGO_TARGET_DIR="$HOME/.cargo/target/OPI"
-cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index --tag "$BRC20_INDEX_VERSION"
-export CARGO_TARGET_DIR="$HOME/.cargo/target/brc20-programmable-module"
-cargo install --locked --git https://github.com/bestinslot-xyz/brc20-programmable-module.git --tag "$BRC20_PROG_VERSION"
+SQLX_OFFLINE=true cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git --branch "$OPI_BRANCH" opi-indexer
+
+# Stop and remove the brc20-index and brc20-prog services of the earlier setup:
+# opi-indexer replaces both, and opens the same database and engine data
+for SERVICE in brc20-index brc20-prog; do
+    if [ -f "/etc/systemd/system/$SERVICE.service" ]; then
+        echo "Removing the $SERVICE service, which opi-light replaces..."
+        sudo systemctl disable --now "$SERVICE"
+        sudo rm "/etc/systemd/system/$SERVICE.service"
+    fi
+done
 
 # Stop screen sessions left by setups that ran both processes under screen
 if command -v screen &> /dev/null
@@ -104,49 +109,32 @@ echo "Setting PostgreSQL password..."
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '$DB_PASSWD';"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_DATABASE TO postgres;"
 
-# Run both processes as systemd services: they restart on failure and start on boot.
-# Each service loads .env from this directory the same way this script does.
+# Run the light client as a systemd service: it restarts on failure and starts on boot.
+# The service loads .env from this directory the same way this script does.
 SERVICE_USER=$(id -un)
 SERVICE_DIR=$(pwd)
-BRC20_PROG_BIN=$(command -v brc20-prog || true)
-BRC20_INDEX_BIN=$(command -v brc20-index || true)
-if [ -z "$BRC20_PROG_BIN" ] || [ -z "$BRC20_INDEX_BIN" ]; then
-    echo "brc20-prog or brc20-index is not on PATH after cargo install. Add \$HOME/.cargo/bin to PATH and run this script again."
+OPI_INDEXER_BIN=$(command -v opi-indexer || true)
+if [ -z "$OPI_INDEXER_BIN" ]; then
+    echo "opi-indexer is not on PATH after cargo install. Add \$HOME/.cargo/bin to PATH and run this script again."
     exit 1
 fi
 
-echo "Installing systemd services brc20-prog and brc20-index..."
+echo "Installing systemd service opi-light..."
 
-sudo tee /etc/systemd/system/brc20-prog.service > /dev/null <<EOF
+sudo tee /etc/systemd/system/opi-light.service > /dev/null <<EOF
 [Unit]
-Description=BRC20 Programmable Module (OPI light client)
+Description=OPI BRC-20 light client with the BRC2.0 engine (opi-indexer brc20 light)
 Wants=network-online.target
-After=network-online.target
+After=network-online.target postgresql.service
 
 [Service]
 User=$SERVICE_USER
 WorkingDirectory=$SERVICE_DIR
-ExecStart=/bin/bash -c 'set -a; . ./.env; set +a; exec $BRC20_PROG_BIN -l info'
+ExecStart=/bin/bash -c 'set -a; . ./.env; set +a; exec $OPI_INDEXER_BIN brc20 light'
 Restart=always
 RestartSec=5
-LimitNOFILE=65536
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo tee /etc/systemd/system/brc20-index.service > /dev/null <<EOF
-[Unit]
-Description=BRC20 Indexer (OPI light client)
-Wants=network-online.target brc20-prog.service
-After=network-online.target postgresql.service brc20-prog.service
-
-[Service]
-User=$SERVICE_USER
-WorkingDirectory=$SERVICE_DIR
-ExecStart=/bin/bash -c 'set -a; . ./.env; set +a; exec $BRC20_INDEX_BIN -l info'
-Restart=always
-RestartSec=5
+# The light client finishes its current block on SIGTERM
+TimeoutStopSec=180
 LimitNOFILE=65536
 
 [Install]
@@ -154,13 +142,12 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable brc20-prog brc20-index
-sudo systemctl restart brc20-prog brc20-index
+sudo systemctl enable opi-light
+sudo systemctl restart opi-light
 
-echo "BRC20 Programmable Module and BRC20 Indexer are running as systemd services."
+echo "The OPI light client is running as the systemd service opi-light."
 echo ""
-echo "To check their status, use: systemctl status brc20-prog brc20-index"
-echo "To follow the BRC20 Programmable Module logs, use: journalctl -u brc20-prog -f"
-echo "To follow the BRC20 Indexer logs, use: journalctl -u brc20-index -f"
+echo "To check its status, use: systemctl status opi-light"
+echo "To follow its logs, use: journalctl -u opi-light -f"
 echo ""
 echo "Setup complete!"
