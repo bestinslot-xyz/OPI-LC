@@ -1,5 +1,5 @@
 # ---- builder ----
-FROM rust:1.88-slim AS builder
+FROM rust:1.94-slim-bookworm AS builder
 
 RUN apt-get update && \
     apt-get install -y pkg-config libssl-dev && \
@@ -8,7 +8,7 @@ RUN apt-get update && \
 WORKDIR /app
 
 # build only brc20-index from the repo
-RUN cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index --tag v2.0.13
+RUN cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index --tag v2.0.15
 
 # ---- runtime ----
 FROM debian:bookworm-slim

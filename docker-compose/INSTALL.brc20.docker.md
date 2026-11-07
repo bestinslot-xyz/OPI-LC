@@ -3,7 +3,7 @@
 You can use docker-compose to run the services. Make sure you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) installed and then run:
 
 > [!CAUTION]
-> Make sure to set the password environment variables in the `.env` file before running the containers such as `DB_PASSWD`, `BRC20_PROG_RPC_SERVER_PASSWORD`, and `BRC20_PROG_RPC_SERVER_USER`.
+> Make sure to set the password environment variables in the `.env` file before running the containers such as `DB_PASSWD`, `BRC20_PROG_RPC_SERVER_PASSWORD`, and `BRC20_PROG_RPC_SERVER_USER`. `BRC20_PROG_RPC_SERVER_PASSWORD` needs at least 32 characters (generate one with `openssl rand -hex 32`); brc20-prog does not start without it.
 
 ```bash
 docker compose up -d --build

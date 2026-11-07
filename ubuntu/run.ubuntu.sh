@@ -21,22 +21,24 @@ if [ "$DB_PASSWD" == "postgres" ]; then
     exit 1
 fi
 
-if ! [[ $BRC20_PROG_RPC_SERVER_URL == "127.0.0.1"* ]]; then
-    if ! [ $BRC20_PROG_RPC_SERVER_ENABLE_AUTH == "true" ]; then
-        echo "You have not enabled authentication for the RPC server, and the server is accessible externally. Please change BRC20_PROG_RPC_SERVER_ENABLE_AUTH to true in the .env file."
-        exit 1
-    fi
-    if [ $BRC20_PROG_RPC_SERVER_USER == "brc20prog" ] || [ $BRC20_PROG_RPC_SERVER_PASSWORD == "brc20prog" ]; then
-        echo "You are using the default username or password for the RPC server, and the server is accessible externally. Please change BRC20_PROG_RPC_SERVER_USER and BRC20_PROG_RPC_SERVER_PASSWD to secure values in the .env file."
-        exit 1
-    fi
+# brc20-prog serves its indexer methods only with HTTP basic auth, and refuses to start
+# without a username and a password of at least 32 characters.
+if [ "${BRC20_PROG_RPC_SERVER_ENABLE_AUTH:-true}" != "true" ]; then
+    echo "brc20-prog always requires authentication. Remove BRC20_PROG_RPC_SERVER_ENABLE_AUTH from the .env file."
+    exit 1
+fi
+BRC20_PROG_RPC_SERVER_USER="${BRC20_PROG_RPC_SERVER_USER:-}"
+BRC20_PROG_RPC_SERVER_PASSWORD="${BRC20_PROG_RPC_SERVER_PASSWORD:-}"
+if [ -z "$BRC20_PROG_RPC_SERVER_USER" ] || [ ${#BRC20_PROG_RPC_SERVER_PASSWORD} -lt 32 ]; then
+    echo "Set BRC20_PROG_RPC_SERVER_USER and a BRC20_PROG_RPC_SERVER_PASSWORD of at least 32 characters in the .env file. Generate a password with: openssl rand -hex 32"
+    exit 1
 fi
 
-if ! [ $BRC20_PROG_RPC_SERVER_USER == $BRC20_PROG_RPC_USER ]; then
+if [ "$BRC20_PROG_RPC_SERVER_USER" != "${BRC20_PROG_RPC_USER:-}" ]; then
     echo "BRC20_PROG_RPC_SERVER_USER and BRC20_PROG_RPC_USER must be the same for authentication to work. Please fix this in the .env file."
     exit 1
 fi
-if ! [ $BRC20_PROG_RPC_SERVER_PASSWORD == $BRC20_PROG_RPC_PASSWORD ]; then
+if [ "$BRC20_PROG_RPC_SERVER_PASSWORD" != "${BRC20_PROG_RPC_PASSWORD:-}" ]; then
     echo "BRC20_PROG_RPC_SERVER_PASSWORD and BRC20_PROG_RPC_PASSWORD must be the same for authentication to work. Please fix this in the .env file."
     exit 1
 fi
@@ -51,7 +53,7 @@ then
     sudo systemctl enable postgresql
 
     # Configure PostgreSQL
-    sudo -u postgres psql -c "ALTER SYSTEM SET listen_addresses TO '*';"
+    sudo -u postgres psql -c "ALTER SYSTEM SET listen_addresses TO 'localhost';"
     sudo -u postgres psql -c "ALTER SYSTEM SET max_connections TO 2000;"
 
     # Restart PostgreSQL to apply changes
@@ -82,8 +84,8 @@ rustup default stable
 rustup update stable
 
 # Install dependencies, pinned to the release tags this setup is validated against
-BRC20_INDEX_VERSION="v2.0.13"
-BRC20_PROG_VERSION="v0.16.1"
+BRC20_INDEX_VERSION="v2.0.15"
+BRC20_PROG_VERSION="v0.17.0"
 export CARGO_TARGET_DIR="$HOME/.cargo/target/OPI"
 cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git brc20-index --tag "$BRC20_INDEX_VERSION"
 export CARGO_TARGET_DIR="$HOME/.cargo/target/brc20-programmable-module"

@@ -46,7 +46,7 @@ curl https://sh.rustup.rs -sSf | sh
 1) Clone the OPI repository
 
 ```sh
-git clone https://github.com/bestinslot-xyz/OPI.git
+git clone --branch v2.0.15 https://github.com/bestinslot-xyz/OPI.git
 cd OPI/modules/brc20_index
 ```
 
@@ -65,6 +65,8 @@ DB_PASSWD="<PASSWORD>"
 
 BRC20_PROG_ENABLED="true"
 BRC20_PROG_RPC_URL="http://127.0.0.1:18545"
+BRC20_PROG_RPC_USER="brc20prog"
+BRC20_PROG_RPC_PASSWORD="<BRC20_PROG_PASSWORD>"
 BRC20_PROG_BALANCE_SERVER_ADDR="127.0.0.1:18546"
 
 BITCOIN_RPC_CACHE_ENABLED="true"
@@ -75,7 +77,7 @@ BITCOIN_RPC_PROXY_SERVER_URL="127.0.0.1:18547"
 3) Clone the BRC2.0 repository
 
 ```sh
-git clone https://github.com/bestinslot-xyz/brc20-programmable-module.git
+git clone --branch v0.17.0 https://github.com/bestinslot-xyz/brc20-programmable-module.git
 cd brc20-programmable-module
 ```
 
@@ -88,7 +90,12 @@ BRC20_PROG_BALANCE_SERVER_URL=http://localhost:18546
 BITCOIN_RPC_URL=127.0.0.1:18547 # This points to the light client proxy server
 
 BRC20_PROG_RPC_SERVER_URL=127.0.0.1:18545
-BRC20_PROG_RPC_SERVER_ENABLE_AUTH=false
+
+# Required: the indexer methods are served only with these credentials, and they must match
+# BRC20_PROG_RPC_USER / BRC20_PROG_RPC_PASSWORD in the indexer's .env. The password needs at
+# least 32 characters, generate one with: openssl rand -hex 32
+BRC20_PROG_RPC_SERVER_USER="brc20prog"
+BRC20_PROG_RPC_SERVER_PASSWORD="<BRC20_PROG_PASSWORD>"
 
 # Required for trace hash calculation
 EVM_RECORD_TRACES=true
