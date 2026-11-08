@@ -48,7 +48,7 @@ then
     sudo systemctl enable postgresql
 
     # Configure PostgreSQL
-    sudo -u postgres psql -c "ALTER SYSTEM SET listen_addresses TO '*';"
+    sudo -u postgres psql -c "ALTER SYSTEM SET listen_addresses TO 'localhost';"
     sudo -u postgres psql -c "ALTER SYSTEM SET max_connections TO 2000;"
 
     # Restart PostgreSQL to apply changes
