@@ -1,11 +1,9 @@
-if command -v pm2 &> /dev/null
-then
-    PM2_PROCESSES=$(pm2 list | grep -c "brc20-api" || true)
-    if [ "$PM2_PROCESSES" -gt 0 ]; then
-        echo "Stopping existing BRC20 API process..."
-        pm2 stop brc20-api
-        pm2 delete brc20-api
-    fi
+#!/bin/bash
+
+# Stop the API service run-api.ubuntu.sh installs, and keep it stopped across reboots
+if [ -f "/etc/systemd/system/opi-api.service" ]; then
+    echo "Stopping opi-api service..."
+    sudo systemctl disable --now opi-api
 else
-    echo "PM2 is not installed. No BRC20 API process to stop."
+    echo "The opi-api service is not installed. No API to stop."
 fi
