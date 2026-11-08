@@ -11,7 +11,7 @@ name: opi-lc
 
 x-opi-build: &opi-build
   # The OPI repository at OPI_REF (a branch or a release tag).
-  context: https://github.com/bestinslot-xyz/OPI.git#${OPI_REF:-opi-monolith}
+  context: https://github.com/bestinslot-xyz/OPI.git#${OPI_REF:-v3.0.0}
 
 x-opi-env: &opi-env
   NETWORK_TYPE: ${NETWORK_TYPE:-${BITCOIN_RPC_NETWORK:-mainnet}}

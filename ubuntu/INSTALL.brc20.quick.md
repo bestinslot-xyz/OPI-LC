@@ -32,8 +32,8 @@ Hosts that ran the earlier setup switch in place: `opi-light` opens the same dat
 ```bash
 cp .env ../opi-lc.env.bak
 git checkout -- .env
-git fetch origin
-git checkout opi-monolith
+git checkout main
+git pull --ff-only origin main
 ```
 
 2. Carry over `DB_PASSWD`, `DB_DATABASE`, `REPORT_TO_INDEXER`, `REPORT_NAME`, `BRC20_PROG_DB_PATH` and the `API_*` and `RATE_LIMIT_*` values from `../opi-lc.env.bak` into the new `.env`. On signet, set `NETWORK_TYPE="signet"`.

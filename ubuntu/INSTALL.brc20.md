@@ -51,7 +51,7 @@ rustup update stable
 ## Installing opi-indexer
 
 ```sh
-SQLX_OFFLINE=true cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git --branch opi-monolith opi-indexer
+SQLX_OFFLINE=true cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git --tag v3.0.0 opi-indexer
 ```
 
 ## Configuration

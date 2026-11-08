@@ -8,8 +8,8 @@ set +o allexport
 # Exit on error, undefined variable
 set -eu
 
-# The OPI repository branch opi-indexer is installed from
-OPI_BRANCH="opi-monolith"
+# The OPI release tag opi-indexer is installed from
+OPI_TAG="v3.0.0"
 
 if [ "${REPORT_TO_INDEXER:-}" == "true" ]; then
     if [ "${REPORT_NAME:-}" == "opi-brc20-lc" ]; then
@@ -82,7 +82,7 @@ rustup update stable
 
 # Install opi-indexer, which runs the light client, the BRC2.0 engine and the API
 export CARGO_TARGET_DIR="$HOME/.cargo/target/OPI"
-SQLX_OFFLINE=true cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git --branch "$OPI_BRANCH" opi-indexer
+SQLX_OFFLINE=true cargo install --locked --git https://github.com/bestinslot-xyz/OPI.git --tag "$OPI_TAG" opi-indexer
 
 # Stop and remove the brc20-index and brc20-prog services of the earlier setup:
 # opi-indexer replaces both, and opens the same database and engine data

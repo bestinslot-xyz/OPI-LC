@@ -51,8 +51,8 @@ docker compose stop db
 ```bash
 cp .env ../opi-lc.env.bak
 git checkout -- .env
-git fetch origin
-git checkout opi-monolith
+git checkout main
+git pull --ff-only origin main
 ```
 
 Then carry over `DB_PASSWD`, `REPORT_TO_INDEXER`, `REPORT_NAME` and `API_PORT` from `../opi-lc.env.bak` into the new `.env`. On signet, set `NETWORK_TYPE="signet"`.
