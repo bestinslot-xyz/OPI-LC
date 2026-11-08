@@ -1,5 +1,9 @@
 # OPI-LC - Open Protocol Indexer - Light Client
 
+> [!WARNING]
+> **Running OPI-LC 2.x? Its setup lives on the [`legacy`](https://github.com/bestinslot-xyz/OPI-LC/tree/legacy) branch.**
+> OPI-LC 3.0 replaces the `brc20-index`, `brc20-prog` and `brc20-api` services of 2.x with the single `opi-indexer` binary from OPI 3.0. To keep a 2.x node as it is, pull from `legacy`. To upgrade, switch in place with the [Docker](docker-compose/INSTALL.brc20.docker.md#switching-from-the-three-image-setup) or [Ubuntu](ubuntu/INSTALL.brc20.quick.md#switching-from-the-brc20-index-and-brc20-prog-services) guide: it keeps the database and the BRC2.0 engine data.
+
 **OPI-LC**, is a light client for **meta-protocols** on Bitcoin. **OPI-LC** uses **OPI Network** to fetch valid event hashes for a block and **OPI API** for fetching events for the block. Then it re-calculates the hashes itself to validate the events.
 
 OPI-LC supports **PostgreSQL** for better performance.
